@@ -1,0 +1,14 @@
+# {{ ansible_managed }}
+
+root:	{{ inventory.mail.recipient }}
+
+mailer-daemon: root
+postmaster: root
+nobody: root
+hostmaster: root
+www: root
+ftp: root
+abuse: root
+security: root
+
+#eof

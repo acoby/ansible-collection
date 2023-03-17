@@ -1,0 +1,24 @@
+---
+- name: "Enumerate all Gluster Cluster hosts and add them to Gluster client hosts file"
+  become: true
+  ansible.builtin.blockinfile:
+    dest: /etc/hosts
+    marker: "# {mark} ANSIBLE MANAGED: Gluster Cluster Hosts"
+    content: "\
+      {% for host in groups['gluster'] %}\
+      {% if network.lan is defined and hostvars[host].network.gfs is defined %}{{ hostvars[host].network.gfs.lan.ipv4 }}{% else %}{{ hostvars[host].network.gfs.wan.ipv4 }}{% endif %} {{ hostvars[host].network.gfs.fqdn }}
+
+      {% endfor %}"
+  when:
+    - "'gluster' in groups"
+    - "groups['gluster'] | length > 0"
+
+- name: "Install GlusterFS Client"
+  become: true
+  ansible.builtin.apt:
+    name:
+      - "glusterfs-client"
+    state: present
+  when:
+    - "'gluster' in groups"
+    - "groups['gluster'] | length > 0"

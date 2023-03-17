@@ -23,12 +23,9 @@ common_apt_packages:
   - "python3-ldap"
   - "jq"
 common_pip_packages: []
-owner:
-  users: []
-inventory:
-  mail:
-    host: "localhost"
-    port: 25
-    username: "postmaster"
-    password: "password"
-    from: "postmaster@localhost"
+mta_packages:
+  - "msmtp"
+  - "msmtp-mta"
+reboot_when_required: false
+zfs_enabled: false
+

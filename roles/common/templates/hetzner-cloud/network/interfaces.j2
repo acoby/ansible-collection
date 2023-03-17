@@ -1,0 +1,38 @@
+## {{ ansible_managed }}
+
+# The loopback network interface
+auto lo
+iface lo inet loopback
+
+# The primary network interface
+auto {{ network.wan.interface }}
+
+{% if network.wan.ipv4 is defined %}
+iface {{ network.wan.interface }} inet static
+  address {{ network.wan.ipv4.address }}
+  netmask {{ network.wan.ipv4.netmask }}
+  gateway {{ network.wan.ipv4.gateway }}
+  pointopoint {{ network.wan.ipv4.gateway }}
+  dns-nameservers {{ network.wan.ipv4.dns | sort | join(' ') }}
+{% if network.wan.ipv4.subnet is defined %}
+{% for subnet_address in network.wan.ipv4.subnet %}
+  up ip addr add {{ subnet_address }} dev {{ network.wan.interface }}
+  down ip addr del {{ subnet_address }} dev {{ network.wan.interface }}
+{% endfor %}
+{% endif %}
+{% endif %}
+
+{% if network.wan.ipv6 is defined %}
+iface {{ network.wan.interface }} inet6 static
+  address {{ network.wan.ipv6.address }}/{{ network.wan.ipv6.prefix }}
+  gateway {{ network.wan.ipv6.gateway }}
+  post-up route add -net :: netmask 0 gw {{ network.wan.ipv6.gateway }}%{{ network.wan.interface }} || true
+  pre-down route del -net :: netmask 0 gw {{ network.wan.ipv6.gateway }}%{{ network.wan.interface }} || true
+{% if network.wan.ipv6.subnet is defined %}
+{% for subnet_address in network.wan.ipv6.subnet %}
+  up ip addr add {{ subnet_address }} dev {{ network.wan.interface }}
+  down ip addr del {{ subnet_address }} dev {{ network.wan.interface }}
+{% endfor %}
+{% endif %}
+  dns-nameservers {{ network.wan.ipv6.dns | sort | join(' ') }}
+{% endif %}

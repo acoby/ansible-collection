@@ -1,0 +1,13 @@
+## {{ ansible_managed }}
+
+{% if network.wan.ipv4 is defined and network.wan.ipv4.dns is defined %}
+{% for host in network.wan.ipv4.dns | sort %}
+nameserver {{ host }}
+{% endfor %}
+{% endif %}
+
+{% if network.wan.ipv6 is defined and network.wan.ipv6.dns is defined %}
+{% for host in network.wan.ipv6.dns | sort %}
+nameserver {{ host }}
+{% endfor %}
+{% endif %}

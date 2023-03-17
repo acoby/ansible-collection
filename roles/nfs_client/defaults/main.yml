@@ -1,0 +1,3 @@
+---
+default_nfs_client_packages:
+  - "nfs-common"

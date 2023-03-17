@@ -1,0 +1,41 @@
+---
+- name: "Define some facts"
+  ansible.builtin.set_fact:
+    nfs_clients:
+      - "{{ inventory.network.pan.ipv4 }}"
+      - "{{ inventory.network.pan.ipv6 }}"
+      - "{{ inventory.network.lan.ipv4 }}"
+      - "{{ inventory.network.lan.ipv6 }}"
+
+- name: "Install NFS server"
+  become: true
+  ansible.builtin.apt:
+    name: "{{ default_nfs_packages }}"
+    state: present
+
+- name: "Ensure directories to export exist"
+  become: true
+  ansible.builtin.file:
+    path: "{{ nfs_share.path }}"
+    state: directory
+    mode: "{{ nfs_share.mode | default(default_nfs_mode) }}"
+  loop: "{{ exports | default([]) }}"
+  loop_control:
+    loop_var: nfs_share
+
+- name: "Configure NFS exports"
+  become: true
+  ansible.builtin.template:
+    src: "exports.j2"
+    dest: "/etc/exports"
+    owner: "root"
+    group: "root"
+    mode: "0644"
+  notify: "Reload NFS"
+
+- name: "Enable NFS Server"
+  become: true
+  ansible.builtin.service:
+    name: "nfs-kernel-server"
+    state: "started"
+    enabled: true

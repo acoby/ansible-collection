@@ -1,0 +1,9 @@
+---
+ca_base: "/srv/ca"
+ca_common_name: "Acoby CA"
+ca_country_name: "DE"
+ca_state_or_province_name: "Hamburg"
+ca_locality_name: "Hamburg"
+ca_organization_name: "acoby GmbH"
+ca_organizational_unit_name: "IT"
+ca_email_address: "postmaster@acoby.de"

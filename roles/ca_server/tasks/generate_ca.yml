@@ -1,0 +1,73 @@
+# generates ca certificate
+---
+- name: "Check for CA root password cache"
+  ansible.builtin.stat:
+    path: "{{ ca_pwd_file }}"
+  register: password_cache
+
+- name: "Generate CA root password"
+  ansible.builtin.set_fact:
+    service_ca_password: "{{ lookup('password', '/dev/null length=32 chars=ascii_letters,digits') }}"
+  when: "not password_cache.stat.exists"
+
+- name: "Write CA root password to cache"
+  ansible.builtin.copy:
+    content: "{{ service_ca_password }}"
+    dest: "{{ ca_pwd_file }}"
+    owner: "root"
+    group: "root"
+    mode: "0400"
+  when: "not password_cache.stat.exists"
+
+- name: "Read CA root password from cache"
+  ansible.builtin.command: "cat {{ ca_pwd_file }}"
+  register: service_ca_password
+  changed_when: "service_ca_password.rc != 0"
+
+- name: "Create root-CA key"
+  community.crypto.openssl_privatekey:
+    path: "{{ ca_key_file }}"
+    passphrase: "{{ service_ca_password.stdout }}"
+    cipher: auto
+    owner: root
+    group: root
+    mode: '0400'
+
+- name: "Create root-CA CSR"
+  community.crypto.openssl_csr:
+    path: "{{ ca_csr_file }}"
+    privatekey_path: "{{ ca_key_file }}"
+    privatekey_passphrase: "{{ service_ca_password.stdout }}"
+    common_name: "{{ service_ca.common_name }}"
+    country_name: "{{ service_ca.country_name }}"
+    state_or_province_name: "{{ service_ca.state_or_province_name }}"
+    locality_name: "{{ service_ca.locality_name }}"
+    organization_name: "{{ service_ca.organization_name }}"
+    organizational_unit_name: "{{ service_ca.organizational_unit_name }}"
+    email_address: "{{ service_ca.email_address }}"
+    basic_constraints:
+      - CA:TRUE
+    basic_constraints_critical: true
+    key_usage:
+      - keyCertSign
+      - cRLSign
+      - digitalSignature
+
+- name: "Create root-CA certificate"
+  community.crypto.x509_certificate:
+    path: "{{ ca_crt_file }}"
+    csr_path: "{{ ca_csr_file }}"
+    privatekey_path: "{{ ca_key_file }}"
+    privatekey_passphrase: "{{ service_ca_password.stdout }}"
+    backup: true
+    provider: selfsigned
+
+- name: "Convert the certificate into a PKCS12 file with the attached private key"
+  community.crypto.openssl_pkcs12:
+    action: export
+    path: "{{ ca_pfx_file }}"
+    name: "{{ service_ca.common_name }}"
+    privatekey_path: "{{ ca_key_file }}"
+    privatekey_passphrase: "{{ service_ca_password.stdout }}"
+    passphrase: "{{ service_ca_password.stdout }}"
+    certificate_path: "{{ ca_crt_file }}"

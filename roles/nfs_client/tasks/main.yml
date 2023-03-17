@@ -1,0 +1,11 @@
+---
+- name: "Configure NFS Client"
+  ansible.builtin.include_tasks: configure.yml
+  args:
+    apply:
+      become: true
+      tags:
+        - nfs_client
+  when: "'nfs' in groups"
+  tags:
+    - nfs_client

@@ -1,0 +1,30 @@
+---
+- name: "Enumerate all cluster hosts within the hosts file"
+  ansible.builtin.blockinfile:
+    dest: /etc/hosts
+    marker: "# {mark} ANSIBLE MANAGED: Gluster Cluster Hosts"
+    content: "\
+      {% for host in groups[gluster_group] %}\
+      {{ hostvars[host].network.gfs.lan.ipv4 }} {{ hostvars[host].network.gfs.fqdn }}
+
+      {% endfor %}"
+
+- name: "Probe gluster nodes"
+  run_once: true
+  block:
+    - name: "Get current gluster status"
+      ansible.builtin.command: "gluster peer status"
+      register: "_gluster_status"
+      changed_when: false
+
+    - name: "Add new gluster node"
+      ansible.builtin.command: "gluster peer probe {{ hostvars[gluster_peer].network.gfs.fqdn }}"
+      changed_when: false
+      loop: "{{ groups[gluster_group] | sort }}"
+      loop_control:
+        loop_var: gluster_peer
+      when:
+        - "gluster_peer != inventory_hostname"
+        - "hostvars[gluster_peer].network.gfs is defined"
+        - "hostvars[gluster_peer].network.gfs.fqdn is defined"
+        - "hostvars[gluster_peer].network.gfs.fqdn not in _gluster_status.stdout"

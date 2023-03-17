@@ -1,0 +1,118 @@
+---
+- name: "Create Volumes and Bricks for volume {{ volume.name }}"
+  ansible.builtin.file:
+    path: "{{ volume.path }}"
+    owner: "root"
+    group: "root"
+    mode: "0755"
+    state: "directory"
+
+- name: "Define empty Gluster brick list for volume {{ volume.name }}"
+  ansible.builtin.set_fact:
+    gluster_brick: []
+
+- name: "Define Gluster Bricks for volume {{ volume.name }}"
+  ansible.builtin.set_fact:
+    gluster_brick: "{{ gluster_brick + [hostvars[gluster_peer].network.gfs.fqdn + ':' + volume.path] }}"
+  with_items: "{{ groups[gluster_group] | sort }}"
+  loop_control:
+    loop_var: gluster_peer
+  when:
+    - "hostvars[gluster_peer].network.gfs is defined"
+    - "hostvars[gluster_peer].network.gfs.fqdn is defined"
+
+- name: "List bricks for volume {{ volume.name }}"
+  ansible.builtin.debug:
+    msg: "{{ gluster_brick }}"
+
+- name: "Check if Gluster volume exists {{ volume.name }}"
+  ansible.builtin.command: "gluster volume info {{ volume.name }}"
+  changed_when: false
+  failed_when: false
+  register: gluster_volume_info
+
+- name: "Create gluster volume {{ volume.name }}"
+  run_once: true
+  when:
+    - "'Volume Name' not in gluster_volume_info.stdout"
+  block:
+    - name: "Create Gluster volume {{ volume.name + ' with replica ' + volume.replica }}"
+      ansible.builtin.command: "gluster volume create {{ volume.name }} replica {{ volume.replica }} transport tcp {{ gluster_brick | join(' ') }} force"
+      changed_when: "'successful' in gluster_volume_create.stdout"
+      register: gluster_volume_create
+
+    - name: "Ensure Gluster volume start {{ volume.name }}"
+      ansible.builtin.command: "gluster volume start {{ volume.name }}"
+      changed_when: "'successful' in gluster_volume_start.stdout"
+      register: gluster_volume_start
+
+# volume create <NEW-VOLNAME> [stripe <COUNT>] [replica <COUNT> [arbiter <COUNT>]] [disperse [<COUNT>]] [disperse-data <COUNT>] [redundancy <COUNT>] [transport <tcp|rdma|tcp,rdma>] <NEW-BRICK>... [force]
+# Replica 2 volumes are prone to split-brain. Use Arbiter or Replica 3 to avoid this. See: http://docs.gluster.org/en/latest/Administrator%20Guide/Split%20brain%20and%20ways%20to%20deal%20with%20it/.
+# TODO erzeuge String mit replica X arbiter Y (<server>:<path>)+
+# TODO 49152 aufsteigend Port freigeben
+
+- name: "Get Gluster volume infos for {{ volume.name }}"
+  ansible.builtin.command: "gluster volume info {{ volume.name }}"
+  changed_when: false
+  register: gluster_volume_info
+
+# gluster volume status gv0
+# dabei dann erkennen ob nur ein Node fehlt und wenn
+# gluster volume add-brick gv0 replica 3 arbiter 1 ac-sc0006.acoby.de:/srv/gluster/brick1/gv0 force
+
+- name: "Configure volume {{ volume.name }}"
+  run_once: true
+  block:
+    - name: "Read volume configuration of {{ volume.name }}"
+      ansible.builtin.command: "gluster volume get {{ volume.name }} all"
+      changed_when: false
+      register: gluster_volume_configuration
+
+    - name: "Configure nfs.disable on {{ volume.name }}"
+      ansible.builtin.command: "gluster volume set {{ volume.name }} {{ item.key }} {{ item.value }}"
+      changed_when: true
+      when: "not (gluster_volume_configuration.stdout | regex_search('^'+item.key+'(.*)'+item.value+'$'))"
+      loop:
+        - key: "nfs.disable"
+          value: "on"
+        - key: "performance.cache-max-file-size"
+          value: "{{ volume.cache }}"
+        - key: "performance.flush-behind"
+          value: "on"
+        - key: "performance.client-io-threads"
+          value: "on"
+        - key: "performance.io-cache"
+          value: "on"
+        - key: "performance.io-thread-count"
+          value: "16"
+        - key: "performance.readdir-ahead"
+          value: "on"
+        - key: "cluster.lookup-optimize"
+          value: "on"
+        - key: "client.event-threads"
+          value: "4"
+        - key: "server.event-threads"
+          value: "4"
+        - key: "cluster.readdir-optimize"
+          value: "on"
+        - key: "performance.write-behind-window-size"
+          value: "1MB"
+
+# - name: "Mount {{ volume.name }} on host"
+#   block:
+#     - name: "Make Mount-Point for {{ volume.name }} on {{ volume.mountpoint }}"
+#       ansible.builtin.file:
+#         path: "{{ volume.mountpoint }}"
+#         owner: "root"
+#         group: "root"
+#         mode: "0755"
+#         state: "directory"
+#
+#     - name: "Mount Gluster Volume {{ volume.name }} on {{ volume.mountpoint }}"
+#       ansible.posix.mount:
+#         name: "{{ volume.mountpoint }}"
+#         src: "{{ network.lan.ipv4.address }}:{{ volume.name }}"
+#         passno: "2"
+#         fstype: "glusterfs"
+#         state: mounted
+#   when: "volume.mountpoint is defined"

@@ -11,7 +11,7 @@
     name: "netfilter-persistent.service"
     state: "stopped"
     enabled: false
-  ignore_errors: true
+  ignore_errors: "inventory.id is not defined"
 
 - name: "Check if old firewall-init script still exists"
   ansible.builtin.stat:
@@ -24,7 +24,7 @@
     name: "firewall-init.service"
     state: "stopped"
     enabled: false
-  ignore_errors: true
+  ignore_errors: "inventory.id is not defined"
   when:
     - "_firewall_init_service.stat.exists"
 

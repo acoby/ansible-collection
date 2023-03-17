@@ -1,0 +1,23 @@
+---
+- name: "Check if RPCBind Service Exists"
+  ansible.builtin.stat:
+    path: "/etc/init.d/rpcbind"
+  register: rpcbind_service_status
+
+- name: "Stop RPC Bind Init Service"
+  ansible.builtin.systemd:
+    name: "rpcbind"
+    state: "stopped"
+    enabled: false
+  when: "rpcbind_service_status.stat.exists"
+  ignore_errors: "inventory.id is not defined"
+  register: rpcbindinit_service_stopped
+
+- name: "Stop RPC Bind Socket Init Service"
+  ansible.builtin.systemd:
+    name: "rpcbind.socket"
+    state: "stopped"
+    enabled: false
+  register: rpcbindsocket_service_stopped
+  ignore_errors: "inventory.id is not defined"
+  when: "rpcbind_service_status.stat.exists"

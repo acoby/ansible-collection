@@ -1,0 +1,17 @@
+---
+- name: "Ensure ramdisk directory exists"
+  ansible.builtin.file:
+    dest: "{{ gluster_ramdisk_path }}"
+    mode: '01777'
+    state: directory
+  when: "gluster_ramdisk_path is defined"
+
+- name: "Ensure ramdisk is mounted"
+  ansible.posix.mount:
+    name: "{{ gluster_ramdisk_path }}"
+    src: tmpfs
+    fstype: tmpfs
+    opts: "size={{ gluster_ramdisk_size }}"
+    passno: 2
+    state: mounted
+  when: "gluster_ramdisk_path is defined"

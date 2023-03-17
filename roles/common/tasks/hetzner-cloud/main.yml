@@ -1,0 +1,11 @@
+---
+- name: "Manage Network interfaces"
+  ansible.builtin.include_tasks: configure_interfaces.yml
+  when:
+    - "network is defined"
+    - "ansible_distribution == 'Debian'"
+
+- name: "Disable RPC"
+  ansible.builtin.include_tasks: configure_rpcbind.yml
+  when:
+    - "ansible_distribution == 'Debian'"

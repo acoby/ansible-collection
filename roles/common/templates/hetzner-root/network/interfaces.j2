@@ -1,0 +1,43 @@
+## {{ ansible_managed }}
+
+# The loopback network interface
+auto lo
+iface lo inet loopback
+
+# The primary network interface
+allow-hotplug {{ network.wan.interface }}
+
+{% if network.wan.ipv4 is defined %}
+iface {{ network.wan.interface }} inet static
+  address {{ network.wan.ipv4.address }}
+  netmask {{ network.wan.ipv4.netmask }}
+  gateway {{ network.wan.ipv4.gateway }}
+  dns-nameservers {{ network.wan.ipv4.dns | sort | join(' ') }}
+{% endif %}
+
+{% if network.wan.ipv6 is defined %}
+iface {{ network.wan.interface }} inet6 static
+  address {{ network.wan.ipv6.address }}
+  netmask {{ network.wan.ipv6.prefix }}
+  gateway {{ network.wan.ipv6.gateway }}
+  dns-nameservers {{ network.wan.ipv6.dns | sort | join(' ') }}
+{% endif %}
+
+{% if network.lan is defined %}
+# The lan network interface
+allow-hotplug {{ network.lan.interface }}
+
+{% if network.lan.ipv4 is defined %}
+# LAN IPv4 network
+iface {{ network.lan.interface }} inet static
+  address {{ network.lan.ipv4.address }}
+  netmask {{ network.lan.ipv4.netmask }}
+{% endif %}
+
+{% if network.lan.ipv6 is defined %}
+# LAN IPv6 network
+iface {{ network.lan.interface }} inet6 static
+  address {{ network.lan.ipv6.address }}
+  netmask {{ network.lan.ipv6.prefix }}
+{% endif %}
+{% endif %}

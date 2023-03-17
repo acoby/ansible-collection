@@ -1,0 +1,64 @@
+---
+- name: "Create network directory structure"
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: "directory"
+    owner: "root"
+    group: "root"
+    mode: "0755"
+  loop:
+    - path: "/etc/default"
+    - path: "/etc/network"
+
+- name: "Install Hetzner-Root Hosting Dependencies"
+  ansible.builtin.apt:
+    name: "qemu-guest-agent"
+    state: "present"
+
+- name: "Configure interface and resolver"
+  ansible.builtin.template:
+    src: "{{ template.src }}"
+    dest: "{{ template.dest }}"
+    owner: "{{ template.owner | default('root') }}"
+    group: "{{ template.group | default('root') }}"
+    mode: "{{ template.mode | default('0644') }}"
+    backup: "{{ template.backup | default(omit) }}"
+  loop:
+    - src: "{{ infrastructure.provider.type }}/resolv.conf.j2"
+      dest: "/etc/resolv.conf"
+      owner: "root"
+      group: "root"
+      mode: "0644"
+    - src: "{{ infrastructure.provider.type }}/network/interfaces.j2"
+      dest: "/etc/network/interfaces"
+      backup: true
+  loop_control:
+    loop_var: template
+    label: "{{ template.src }}"
+  ignore_errors: "inventory.id is not defined"
+  register: "_configure_interfaces"
+
+- name: "Configure ZFS"
+  ansible.builtin.include_tasks: "configure_zfs.yml"
+  when: "zfs_enabled | bool"
+
+- name: "Switch to old network device name layout"
+  when:
+    - "_configure_interfaces is changed"
+  block:
+    - name: "Switch to old network layout"
+      ansible.builtin.lineinfile:
+        dest: "/etc/default/grub"
+        regexp: "^GRUB_CMDLINE_LINUX="
+        line: 'GRUB_CMDLINE_LINUX="net.ifnames=0 biosdevname=0"'
+      register: _configure_grub
+
+    - name: "Rerun grub-mkconfig"
+      ansible.builtin.command: "grub-mkconfig -o /boot/grub/grub.cfg"
+      changed_when: true
+      when: "_configure_grub is changed"
+
+    - name: "Reboot for networking changes"
+      ansible.builtin.reboot:
+        msg: "Networking changes found, rebooting"
+      when: "reboot_when_required | bool"

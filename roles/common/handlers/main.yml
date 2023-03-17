@@ -4,4 +4,4 @@
   ansible.builtin.service:
     name: "systemd-journald"
     state: "restarted"
-  ignore_errors: true
+  ignore_errors: "inventory.id is not defined"

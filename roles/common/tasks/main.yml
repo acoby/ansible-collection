@@ -23,6 +23,22 @@
     - common
     - root
 
+- name: "Configure provider specific settings"
+  ansible.builtin.include_tasks: "{{ infrastructure.provider.type }}/main.yml"
+  args:
+    apply:
+      become: true
+      tags:
+        - common
+        - provider
+  when:
+    - "infrastructure is defined"
+    - "infrastructure.provider is defined"
+    - "infrastructure.provider.type is defined"
+  tags:
+    - common
+    - provider
+
 - name: "Configure Users"
   ansible.builtin.include_tasks: configure_users.yml
   args:
@@ -53,3 +69,18 @@
   tags:
     - common
     - journald
+
+- name: "Configure MSMTP"
+  ansible.builtin.include_tasks: configure_msmtp.yml
+  args:
+    apply:
+      become: true
+      tags:
+        - common
+        - mta
+  when:
+    - "'mailgateway' in groups"
+    - "inventory_hostname not in groups['mailgateway']"
+  tags:
+    - common
+    - mta

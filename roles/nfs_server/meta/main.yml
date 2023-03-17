@@ -1,0 +1,18 @@
+---
+dependencies:
+  - role: acoby.collection.firewall
+
+galaxy_info:
+  namespace: acoby
+  role_name: nfs_server
+  author: Thoralf Rickert-Wendt
+  description: A common role for all NFS nodes
+  company: Acoby GmbH
+  license: MIT
+  min_ansible_version: "2.12"
+  platforms:
+    - name: Debian
+      versions:
+        - bullseye
+  galaxy_tags:
+    - system

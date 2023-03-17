@@ -1,0 +1,13 @@
+defaults
+auth           on
+tls            on
+logfile        /var/log/mail/msmtp/mail.log
+
+account        acoby
+host           {{ inventory.mail.host }}
+port           {{ inventory.mail.port }}
+from           {{ inventory.mail.from }}
+user           {{ inventory.mail.username }}
+password       {{ inventory.mail.password }}
+
+account default : acoby

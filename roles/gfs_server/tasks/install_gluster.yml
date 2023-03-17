@@ -1,0 +1,10 @@
+---
+- name: "Install RPCBind and GlusterFS Server"
+  ansible.builtin.apt:
+    name: ['glusterfs-server', 'glusterfs-client']
+
+- name: "Start GlusterFS Server"
+  ansible.builtin.service:
+    name: glusterd
+    state: started
+    enabled: true

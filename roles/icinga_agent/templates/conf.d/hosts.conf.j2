@@ -2,13 +2,13 @@
 
 {% if inventory.monitoring is not defined or inventory.monitoring.master is not defined %}
 object Host "{{ inventory_hostname }}" {
-{% if ('proxmox' in groups and inventory_hostname in groups['proxmox'] ) %}
+{% if ('proxmox' in group_names and inventory_hostname in groups['proxmox'] ) %}
   import "proxmox-host"
-{% elif ('gluster' in groups and inventory_hostname in groups['gluster'] ) %}
+{% elif ('gluster' in group_names and inventory_hostname in groups['gluster'] ) %}
   import "generic-host"
-{% elif ('vms_hetzner_cloud' in groups and inventory_hostname in groups['vms_hetzner_cloud'] ) %}
+{% elif ('vms_hetzner_cloud' in group_names and inventory_hostname in groups['vms_hetzner_cloud'] ) %}
   import "hetzner-vm"
-{% elif ('vms_proxmox' in groups and inventory_hostname in groups['vms_proxmox'] ) %}
+{% elif ('vms_proxmox' in group_names and inventory_hostname in groups['vms_proxmox'] ) %}
   import "proxmox-vm"
 {% else %}
   import "acoby-machine"
@@ -29,7 +29,7 @@ object Host "{{ inventory_hostname }}" {
   vars.mem_critical = "2%"
   vars.docker_warning  = "95"
   vars.docker_critical = "100"
-{% if ('proxmox' in groups and inventory_hostname in groups['proxmox'] ) %}
+{% if ('proxmox' in group_names and inventory_hostname in groups['proxmox'] ) %}
   vars.swap = "true"
 {% else %}
   vars.swap = "false"
@@ -60,7 +60,7 @@ object Host "{{ inventory_hostname }}" {
     disk_partitions = "/"
   }
 
-{% if ('proxmox' in groups and inventory_hostname in groups['proxmox'] ) %}
+{% if ('proxmox' in group_names and inventory_hostname in groups['proxmox'] ) %}
   // proxmox host
   vars.disks["disk /srv"] = {
     disk_partitions = "/srv/"
@@ -76,12 +76,12 @@ object Host "{{ inventory_hostname }}" {
 {% endif %}
 
 {% endif %}
-{% if ('gluster' in groups and inventory_hostname in groups['gluster'] ) %}
+{% if ('gluster' in group_names and inventory_hostname in groups['gluster'] ) %}
   // Gluster services
   vars.glusterfs = "true"
   
 {% endif %}
-{% if ('vms_proxmox' in groups and inventory_hostname in groups['vms_proxmox'] ) %}
+{% if ('vms_proxmox' in group_names and inventory_hostname in groups['vms_proxmox'] ) %}
   // vm host
   vars.disks["disk /srv/docker"] = {
     disk_partitions = "/srv/docker/"
@@ -91,14 +91,14 @@ object Host "{{ inventory_hostname }}" {
   }
   
 {% endif %}
-{% if ('db' in groups and inventory_hostname in groups['db'] ) %}
+{% if ('db' in group_names and inventory_hostname in groups['db'] ) %}
   // DB services
   vars.mariadb = "true"
   vars.postgresql = "true"
   vars.mongodb = "true"
   
 {% endif %}
-{% if 'service_borgbackup' in groups and inventory_hostname in groups['service_borgbackup'] %}
+{% if 'service_borgbackup' in group_names and inventory_hostname in groups['service_borgbackup'] %}
   // BorgBackup services
   vars.borgbackup = "true"
   vars.disks["disk /mnt/sshfs/storagebox"] = {
@@ -106,7 +106,7 @@ object Host "{{ inventory_hostname }}" {
   }
   
 {% endif %}
-{% if 'service_docker_reverseproxies' in groups and inventory_hostname in groups['service_docker_reverseproxies'] %}
+{% if 'service_docker_reverseproxies' in group_names and inventory_hostname in groups['service_docker_reverseproxies'] %}
   // ReverseProxy services
   vars.reverseproxy = "true"
 {% for instanceId in services.reverseproxy_services.instances %}
@@ -127,7 +127,7 @@ object Host "{{ inventory_hostname }}" {
 {% endif %}
 {% endfor %}
 {% endif %}
-{% if 'service_docker_mailcow' in groups and inventory_hostname in groups['service_docker_mailcow'] %}
+{% if 'service_docker_mailcow' in group_names and inventory_hostname in groups['service_docker_mailcow'] %}
   // Mailcow services
   vars.mail = "true"
 {% for instanceId in services.mailcow_services.instances %}
@@ -158,12 +158,12 @@ object Host "{{ inventory_hostname }}" {
 {% endif %}
 {% endfor %}
 {% endif %}
-{% if 'service_pritunl' in groups and inventory_hostname in groups['service_pritunl'] %}
+{% if 'service_pritunl' in group_names and inventory_hostname in groups['service_pritunl'] %}
   // PriTunl services
   vars.pritunl_service = "true"
 
 {% endif %}
-{% if 'service_wireguard' in groups and inventory_hostname in groups['service_wireguard'] %}
+{% if 'service_wireguard' in group_names and inventory_hostname in groups['service_wireguard'] %}
   // Wireguard services
   vars.wireguard_service = "true"
 

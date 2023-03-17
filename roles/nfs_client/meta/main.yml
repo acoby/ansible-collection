@@ -1,0 +1,19 @@
+---
+dependencies:
+  - role: acoby.collection.pan
+
+galaxy_info:
+  namespace: acoby
+  role_name: nfs_client
+  author: Thoralf Rickert-Wendt
+  description: A common role for all NFS clients
+  company: Acoby GmbH
+  license: MIT
+  min_ansible_version: "2.12"
+  platforms:
+    - name: Debian
+      versions:
+        - bullseye
+        - buster
+  galaxy_tags:
+    - system

@@ -18,22 +18,29 @@ Documentation for the collection.
 
 ## Roles
 
-- acoby.common - a base role for all systems
-- acoby.fail2ban - a role for managing fail2ban (requires acoby.common)
-- acoby.ssh - a role for managing SSH (requires acoby.fail2ban)
-- acoby.firewall - a role for managing a iptables based firewall (requires acoby.ssh)
-- acoby.icinga_agent - a role for managing an icinga agent (requires acoby.firewall)
-- acoby.pan - a role for managing a private area network between all hosts in a cluster (requires acoby.icinga\_agent)
-- acoby.ntp_server - a role for managing an NTP server (requires acoby.pan)
-- acoby.bind - a role for managing a DNS server (requires acoby.pan)
-- acoby.docker - a role for managing Docker (requires acoby.pan)
+- acoby.collection.common - a base role for all systems
+- acoby.collection.fail2ban - a role for managing fail2ban (requires acoby.collection.common)
+- acoby.collection.ssh - a role for managing SSH (requires acoby.collection.fail2ban)
+- acoby.collection.firewall - a role for managing a iptables based firewall (requires acoby.collection.ssh)
+- acoby.collection.icinga_agent - a role for managing an icinga agent (requires acoby.collection.firewall)
+- acoby.collection.pan - a role for managing a private area network between all hosts in a cluster (requires acoby.collection.icinga_agent)
 
-So any higher role then requires acoby.pan, which requires acoby.icinga_agent, which requires acoby.firewall, which requires acoby.ssh, which requires acoby.fail2ban, which requires acoby.common.
+- acoby.collection.ca_server - a role for managing a CA provider instance (requires acoby.collection.common)
+- acoby.collection.gfs_client - a role for managing a GlusterFS client (requires acoby.collection.pan)
+- acoby.collection.gfs_server - a role for managing a GlusterFS server (requires acoby.collection.pan)
+- acoby.collection.nfs_client - a role for managing a NFS client (requires acoby.collection.pan)
+- acoby.collection.nfs_server - a role for managing a NFS server (requires acoby.collection.pan)
+- acoby.collection.ntp_server - a role for managing a NTP server (requires acoby.collection.pan)
+- acoby.collection.bind - a role for managing a DNS server (requires acoby.collection.pan)
+- acoby.collection.docker - a role for managing Docker (requires acoby.collection.pan)
+
+So any higher role then
+
+- requires acoby.collection.pan, which
+- requires acoby.collection.icinga_agent, 
+- requires acoby.collection.firewall, which 
+- requires acoby.collection.ssh, which 
+- requires acoby.collection.fail2ban, which 
+- requires acoby.collection.common.
+
 Any host then is guaranteed to have correct network setup with fail2ban, firewall, icinga agent and a PAN network defined.
-
-## Missing
-
-currently we miss roles for
-
-- managing mount points (local, NFS, GFS, SSHFS)
-

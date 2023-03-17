@@ -1,0 +1,63 @@
+# rpc service glusterd start
+#
+# service glusterd start
+---
+- name: "Install GlusterFS"
+  ansible.builtin.include_tasks: install_gluster.yml
+  args:
+    apply:
+      become: true
+      tags:
+        - gluster
+  tags:
+    - gluster
+
+- name: "Configure RamDisk"
+  ansible.builtin.include_tasks: configure_ramdisk.yml
+  args:
+    apply:
+      become: true
+      tags:
+        - gluster
+  tags:
+    - gluster
+
+- name: "Configure Gluster"
+  ansible.builtin.include_tasks: configure_gluster.yml
+  args:
+    apply:
+      become: true
+      tags:
+        - gluster
+  tags:
+    - gluster
+
+- name: "Configure Volumes"
+  ansible.builtin.include_tasks: configure_volume.yml
+  args:
+    apply:
+      become: true
+      tags:
+        - gluster
+  loop: "{{ gluster_volumes | default([]) }}"
+  loop_control:
+    loop_var: volume
+  tags:
+    - gluster
+
+# TODO Firewall integrieren für Arbiter
+# TODO alternativ auch Firewall Check auf Proxmox Hosts
+
+# - name: "Add Monitoring Check Script"
+# https://www.unixadm.org/nagios/check_glusterfs
+# https://www.unixadm.org/software/nagios-stuff/checks/check_glusterfs
+# apt-get install libencode-perl
+
+#  gluster volume remove-brick gv0 replica 2 ac-hcf0001.acoby.de:/srv/gluster/brick1/gv0 force
+#  gluster volume remove-brick gv1 replica 2 ac-hcf0001.acoby.de:/srv/gluster/brick1/gv1 force
+#  gluster volume remove-brick gv2 replica 2 ac-hcf0001.acoby.de:/srv/gluster/brick1/gv2 force
+#  gluster volume add-brick gv0 replica 3 ac-sh0003.acoby.de:/srv/gluster/brick1/gv0
+#  gluster volume add-brick gv1 replica 3 ac-sh0003.acoby.de:/srv/gluster/brick1/gv1
+#  gluster volume add-brick gv2 replica 3 ac-sh0003.acoby.de:/srv/gluster/brick1/gv2
+
+# - name: "Enable Monitoring"

@@ -28,13 +28,23 @@
   ansible.builtin.command:  # noqa command-instead-of-module
     cmd: "systemctl get-default"
   changed_when: false
-  ignore_errors: true
+  ignore_errors: "inventory.id is not defined"
   register: __systemdefault
 
 - name: "Set default to multi-user target"
   ansible.builtin.command:  # noqa command-instead-of-module
     cmd: "systemctl set-default multi-user.target"
   changed_when: true
+  ignore_errors: "inventory.id is not defined"
   when:
     - "'multi-user' not in __systemdefault.stdout"
     - "__systemdefault.rc == 0"
+
+- name: "Set all IPs in /etc/hosts"
+  ansible.builtin.blockinfile:
+    dest: "/etc/hosts"
+    marker: "# {mark} ANSIBLE MANAGED: This hosts IPs"
+    content: "\
+        {% if network.wan.ipv4 is defined %}{{ network.wan.ipv4.address }}   {{ inventory_hostname }} {{ inventory_hostname_short }}{% endif %}\
+        {% if network.wan.ipv6 is defined %}{{ network.wan.ipv6.address }}   {{ inventory_hostname }} {{ inventory_hostname_short }}{% endif %}"
+  ignore_errors: "inventory.id is not defined"

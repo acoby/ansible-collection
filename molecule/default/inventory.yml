@@ -11,6 +11,8 @@ all:
         location: "home"
         hostname: "instance"
         parent: "master"
+        provider:
+          type: "hetzner-root"
         software:
           sandbox: "docker-ce"
       owner:

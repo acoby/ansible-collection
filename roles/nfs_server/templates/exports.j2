@@ -1,0 +1,8 @@
+# {{ ansible_managed }}
+{% for nfs_share in exports | default([]) %}
+{% for nfs_client in nfs_clients %}
+{{ nfs_share.path }} {{ nfs_client }}({{ default_nfs_options | join(',') }})
+{% endfor %}
+
+{% endfor %}
+#eof

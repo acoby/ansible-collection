@@ -1,0 +1,160 @@
+#
+# wir erwarten bei Aufruf ein dict mit folgenden Werten
+#
+# certificate.name
+# certificate.country_name
+# certificate.organization_name
+# certificate.organizational_unit_name
+# certificate.email_address
+# certificate.common_name
+# certificate.subject_alt_name
+---
+- name: "Verify certificate.name"
+  ansible.builtin.assert:
+    that:
+      - "certificate is defined"
+      - "certificate.name is defined"
+      - "certificate.name | length > 0"
+    fail_msg: "'certificate.name' must be string containing a key name"
+
+- name: "Verify certificate.country_name"
+  ansible.builtin.assert:
+    that:
+      - "certificate is defined"
+      - "certificate.country_name is defined"
+      - "certificate.country_name | length == 2"
+    fail_msg: "'certificate.country_name' must be string containing a ISO country"
+
+- name: "Verify certificate.organization_name"
+  ansible.builtin.assert:
+    that:
+      - "certificate is defined"
+      - "certificate.organization_name is defined"
+      - "certificate.organization_name | length > 0"
+    fail_msg: "'certificate.organization_name' must be string containing a company name"
+
+- name: "Verify certificate.email_address"
+  ansible.builtin.assert:
+    that:
+      - "certificate is defined"
+      - "certificate.email_address is defined"
+      - "certificate.email_address | length > 0"
+    fail_msg: "'certificate.email_address' must be string containing an email address"
+
+- name: "Verify certificate.common_name"
+  ansible.builtin.assert:
+    that:
+      - "certificate is defined"
+      - "certificate.common_name is defined"
+      - "certificate.common_name | length > 0"
+    fail_msg: "'certificate.common_name' must be string containing a CA name"
+
+- name: "Verify certificate.subject_alt_name"
+  ansible.builtin.assert:
+    that:
+      - "certificate is defined"
+      - "certificate.subject_alt_name is defined"
+      - "certificate.subject_alt_name | length > 0"
+    fail_msg: "'certificate.subject_alt_name' must be string containing a subject alternative"
+
+- name: "Verify certificate.organizational_unit_name"
+  ansible.builtin.assert:
+    that:
+      - "certificate is defined"
+      - "certificate.organizational_unit_name is defined"
+      - "certificate.organizational_unit_name | length > 0"
+    fail_msg: "'certificate.organizational_unit_name' must be string containing a organization unit name"
+
+- name: "Set facts"
+  ansible.builtin.set_fact:
+    service_ca:
+      base: "{{ inventory.ca.base | default(service_certificate_authority.base) }}"
+
+- name: "Create"
+  ansible.builtin.set_fact:
+    certificate_key: "{{ service_ca.base }}/private/{{ certificate.name }}.key"
+    certificate_file: "{{ service_ca.base }}/certs/{{ certificate.name }}.crt"
+    certificate_request: "{{ service_ca.base }}/csr/{{ certificate.name }}.csr"
+    certificate_pem: "{{ service_ca.base }}/certs/{{ certificate.name }}.pem"
+
+- name: "Check if key exists"
+  ansible.builtin.stat:
+    path: "{{ certificate_key }}"
+  register: _key_file
+
+- name: "Generate private key"
+  community.crypto.openssl_privatekey:
+    path: "{{ certificate_key }}"
+    owner: root
+    group: root
+    mode: 0640
+  when: "not _key_file.stat.exists"
+
+
+- name: "Check if certificate exists"
+  ansible.builtin.stat:
+    path: "{{ certificate_file }}"
+  register: _cert_file
+
+- name: "Check if a certificate is still valid, ignoring failures"
+  community.crypto.x509_certificate_info:
+    path: "{{ certificate_file }}"
+  ignore_errors: true
+  register: _cert_file_validity_check
+  when: _cert_file.stat.exists
+
+- name: "Generate a Certificate Signing Request with common name {{ certificate.common_name }}"
+  community.crypto.openssl_csr:
+    path: "{{ certificate_request }}"
+    privatekey_path: "{{ certificate_key }}"
+    country_name: "{{ certificate.country_name }}"
+    organization_name: "{{ certificate.organization_name }}"
+    organizational_unit_name: "{{ certificate.organizational_unit_name }}"
+    email_address: "{{ certificate.email_address }}"
+    common_name: "{{ certificate.common_name }}"
+    subject_alt_name: "{{ certificate.subject_alt_name }}"
+  when: "not _cert_file.stat.exists or _cert_file_validity_check.expired"
+
+- name: "Read CA root password from cache"
+  ansible.builtin.command: "cat {{ service_ca.base }}/private/.password"
+  register: ca_password
+  changed_when: "ca_password.rc != 0"
+
+- name: "Generate new certificate"
+  community.crypto.x509_certificate:
+    path: "{{ certificate_file }}"
+    csr_path: "{{ certificate_request }}"
+    ownca_path: "{{ service_ca.base }}/certs/ca.crt"
+    ownca_privatekey_path: "{{ service_ca.base }}/private/ca.key"
+    ownca_privatekey_passphrase: "{{ ca_password.stdout }}"
+    provider: ownca
+  when: "not _cert_file.stat.exists or _cert_file_validity_check.expired"
+
+- name: "Copy certificate into PEM file"
+  ansible.builtin.shell: "cat {{ certificate_file }} > {{ certificate_pem }}"
+  args:
+    creates: "{{ certificate_pem }}"
+  register: _ca_create_pem
+
+- name: "Copy ca certificate into PEM file"
+  ansible.builtin.command: "cat {{ service_ca.base }}/certs/ca.crt >> {{ certificate_pem }}"
+  changed_when: false
+  when: "_ca_create_pem.changed"
+
+- name: "Fetch the new private key"
+  ansible.builtin.fetch:
+    src: "{{ certificate_key }}"
+    dest: "fetch/certificates/{{ certificate.name }}.key"
+    flat: "yes"
+
+- name: "Fetch the new certificate"
+  ansible.builtin.fetch:
+    src: "{{ certificate_file }}"
+    dest: "fetch/certificates/{{ certificate.name }}.crt"
+    flat: "yes"
+
+- name: "Fetch the new PEM certificate"
+  ansible.builtin.fetch:
+    src: "{{ certificate_pem }}"
+    dest: "fetch/certificates/{{ certificate.name }}.pem"
+    flat: "yes"

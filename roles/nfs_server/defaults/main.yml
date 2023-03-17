@@ -1,0 +1,11 @@
+---
+default_nfs_mode: "0755"
+default_nfs_options:
+  - "rw"
+  - "async"
+  - "no_root_squash"
+  - "insecure"
+  - "no_subtree_check"
+default_nfs_packages:
+  - "nfs-kernel-server"
+  - "nfs-common"

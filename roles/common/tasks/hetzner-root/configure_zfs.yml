@@ -1,0 +1,19 @@
+---
+- name: "Install ZFS Dependencies"
+  ansible.builtin.apt:
+    name:
+      - "zfs-dkms"
+      - "zfsutils-linux"
+    state: "present"
+
+- name: "Add the ZFS module"
+  community.general.modprobe:
+    name: "zfs"
+
+- name: "Add ZFS to boot sequence"
+  ansible.builtin.copy:
+    content: "zfs"
+    dest: "/etc/modules-load.d/zfs.conf"
+    owner: "root"
+    group: "root"
+    mode: "0644"

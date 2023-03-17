@@ -130,7 +130,7 @@
 - name: "Reload Systemd"
   ansible.builtin.systemd:
     daemon_reload: true
-  ignore_errors: true
+  ignore_errors: "inventory.id is not defined"
   when: "_monitoring_systemd_limits.changed"
 
 - name: "Override System Defaults for Icinga"

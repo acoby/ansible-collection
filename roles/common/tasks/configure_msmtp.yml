@@ -1,0 +1,38 @@
+# role: acoby.mta
+---
+- name: "Uninstall DMA"
+  ansible.builtin.apt:
+    name: "dma"
+    state: absent
+
+- name: "Install Mail Agent MSMTP"
+  ansible.builtin.apt:
+    name: "{{ mta_packages }}"
+    state: present
+
+- name: "Create log folder"
+  ansible.builtin.file:
+    path: "/var/log/mail/msmtp"
+    state: directory
+    owner: "root"
+    group: "root"
+    mode: "0777"
+
+- name: "Configure Mail Agent MSMTP"
+  ansible.builtin.template:
+    src: "{{ item.src }}"
+    dest: "{{ item.dest }}"
+    owner: "{{ item.owner }}"
+    group: "{{ item.group }}"
+    mode: "{{ item.mode }}"
+  with_items:
+    - src: "aliases.j2"
+      dest: "/etc/aliases"
+      owner: "root"
+      group: "root"
+      mode: "0644"
+    - src: "msmtprc.j2"
+      dest: "/etc/msmtprc"
+      owner: "root"
+      group: "root"
+      mode: "0644"
