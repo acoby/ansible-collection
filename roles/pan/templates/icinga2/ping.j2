@@ -1,0 +1,13 @@
+#!/bin/bash
+
+{% for node in groups[wireguard_pan_group] | sort %}
+{% if inventory_hostname != node %}
+ping -c1 -w1 {{ hostvars[node].network.pan.ipv4.address }}
+{% endif %}
+{% endfor %}
+
+if [ -f /etc/wireguard/ping.override.sh ]; then
+  source /etc/wireguard/ping.override.sh
+fi
+
+#eof

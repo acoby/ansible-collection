@@ -1,0 +1,41 @@
+# role: docker
+---
+- name: "Define Docker DNS"
+  ansible.builtin.set_fact:
+    docker_dns_ipv4: []
+    docker_dns_ipv6: []
+    docker_mtu: 1500
+
+- name: "Define Docker DNS IPv4"
+  ansible.builtin.set_fact:
+    docker_dns_ipv4: "{{ network.wan.ipv4.dns }}"
+  when:
+    - "network.wan.ipv4 is defined"
+
+- name: "Define Docker DNS IPv6"
+  ansible.builtin.set_fact:
+    docker_dns_ipv6: "{{ network.wan.ipv6.dns }}"
+  when:
+    - "network.wan.ipv6 is defined"
+
+- name: "Override Docker DNS for Promox environments"
+  ansible.builtin.set_fact:
+    docker_dns_ipv4: "{{ groups['proxmox'] | map('extract', hostvars) | list | json_query('[*].network.pan.ipv4.address') | reject('search', network.pan.ipv4.address) | list | sort }}"
+    docker_dns_ipv6: "{{ groups['proxmox'] | map('extract', hostvars) | list | json_query('[*].network.pan.ipv6.address') | reject('search', network.pan.ipv6.address) | list | sort }}"
+    docker_mtu: 1420
+  when:
+    - "'proxmox' in groups"
+    - "groups['proxmox'] | length > 0"
+
+- name: "Override Docker DNS for Named environments"
+  ansible.builtin.set_fact:
+    docker_dns_ipv4: "{{ groups['dns'] | map('extract', hostvars) | list | json_query('[*].network.pan.ipv4.address') | reject('search', network.pan.ipv4.address) | list | sort }}"
+    docker_dns_ipv6: "{{ groups['dns'] | map('extract', hostvars) | list | json_query('[*].network.pan.ipv6.address') | reject('search', network.pan.ipv6.address) | list | sort }}"
+    docker_mtu: 1420
+  when:
+    - "'dns' in groups"
+    - "groups['dns'] | length > 0"
+
+- name: "Define single DNS list"
+  ansible.builtin.set_fact:
+    docker_dns: "{{ docker_dns_ipv4 + docker_dns_ipv6 }}"

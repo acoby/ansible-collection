@@ -1,0 +1,69 @@
+#!/usr/bin/env python3
+
+import os
+import sys
+import argparse
+import subprocess
+
+# Check to see if a given string contains text of a list of strings
+def inscope(excludelist, needle):
+  for exclude in excludelist:
+    if exclude in needle:
+      return True
+  return False
+
+# make check
+def check(args):
+  result = subprocess.run(['docker-compose', '-f', args.file, 'ps'], stdout=subprocess.PIPE, encoding='utf8')
+  lines = result.stdout.split("\n")
+  del lines[0:2]
+  if len(lines) == 0:
+    print('CRITICAL no services running')
+    sys.exit(3)
+
+  running_services = []
+  not_running_services = []
+
+  for line in lines:
+    service_lines = line.split()
+    if len(service_lines) > 0:
+      service = service_lines[0]
+      if "Up" in service_lines:
+        running_services.append(service)
+      else:
+        if len(args.exclude) == 0 or (len(args.exclude) > 0 and not inscope(args.exclude,service)):
+          not_running_services.append(service)
+
+  rs = ", ".join(running_services)
+  nrs = ", ".join(not_running_services)
+
+  if len(not_running_services) > 0:
+    print("CRITICAL " + nrs + " not running, but " + rs + " running")
+    sys.exit(3)
+  print("OK "+rs+" running")
+  sys.exit(0)
+
+# main method to read arguments and start check
+def main():
+  '''Scripts main function'''
+  parser = argparse.ArgumentParser(description='Check docker-compose processes.')
+  parser.add_argument('-f', '--file', type=str, help='a path to a docker-compose.yml directory to identify all services to check', required=True)
+  parser.add_argument('-s', '--status', help='check if all services are running', action="store_true")
+  parser.add_argument('-e', '--exclude', type=str, help='exclude a given service during check', action='append')
+  args = parser.parse_args()
+
+  if os.path.isfile(args.file):
+    if args.status:
+      check(args)
+    else:
+      print('CRITICAL missing check type')
+  else:
+    print('CRITICAL Service definitions not found')
+    sys.exit(3)
+
+if __name__ == '__main__':
+  try:
+    main()
+  except Exception as e:
+    print(e)
+    sys.exit(3)

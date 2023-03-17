@@ -1,0 +1,26 @@
+# {{ ansible_managed }}
+
+[INCLUDES]
+
+before = sendmail-common.conf
+         mail-whois-common.conf
+         helpers-common.conf
+
+[Definition]
+
+# bypass ban/unban for restored tickets
+norestored = 1
+
+# send notification to NOBOD
+# with type, filter, ip, fqhn, sender, dest, greps
+# greps are not yet supported with <grepmax> (count) and %(_grep_logs)s as content
+
+actionban = /usr/local/sbin/fail2ban-report "BAN" "<name>" "<ip>" "<fq-hostname>" "<sender>" "<dest>"
+
+actionunban = /usr/local/sbin/fail2ban-report "UNBAN" "<name>" "<ip>" "<fq-hostname>" "<sender>" "<dest>"
+              
+[Init]
+
+# Default name of the chain
+#
+name = default

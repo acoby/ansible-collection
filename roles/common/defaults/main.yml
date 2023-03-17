@@ -1,0 +1,34 @@
+---
+common_apt_packages:
+  - "aptitude"
+  - "python3-apt"
+  - "python3-pip"
+  - "sudo"
+  - "libssl-dev"
+  - "libcurl4-openssl-dev"
+  - "libgirepository1.0-dev"
+  - "dnsutils"
+  - "whois"
+  - "apt-transport-https"
+  - "ca-certificates"
+  - "curl"
+  - "gnupg2"
+  - "software-properties-common"
+  - "git"
+  - "python3-pip"
+  - "python3-dev"
+  - "python3-virtualenv"
+  - "python3-setuptools"
+  - "python3-openssl"
+  - "python3-ldap"
+  - "jq"
+common_pip_packages: []
+owner:
+  users: []
+inventory:
+  mail:
+    host: "localhost"
+    port: 25
+    username: "postmaster"
+    password: "password"
+    from: "postmaster@localhost"

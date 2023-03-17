@@ -1,0 +1,14 @@
+#!/bin/bash
+
+RESULT=`/usr/lib/nagios/plugins/check_ntp_timeX "$@"`
+CODE=$?
+
+if [[ $RESULT == *"NTP CRITICAL: Offset unknown"* ]]; then
+        RESULT="NTP OK: Offset unknown"
+        CODE=0
+fi
+
+echo $RESULT
+exit $CODE
+
+#eof

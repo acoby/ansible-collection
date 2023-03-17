@@ -1,0 +1,38 @@
+#!/bin/sh
+
+METHOD=$1
+NAME=$2
+IP=$3
+HOST=$4
+
+{% if inventory.monitoring is defined and inventory.monitoring.notification is defined and inventory.monitoring.notification.acoby is defined %}
+
+ACOBY_ENDPOINT="{{ inventory.monitoring.notification.acoby.endpoint }}"
+ACOBY_USER="{{ inventory.monitoring.notification.acoby.username }}"
+ACOBY_PASS="{{ inventory.monitoring.notification.acoby.password }}"
+SERVICESTATE="WARNING"
+MESSAGE="Method:$METHOD,IP:$IP,Service:$NAME,Host:$HOST"
+SERVICENAME="Fail2Ban"
+PAYLOAD="{\"state\":\"${SERVICESTATE}\",\"message\":\"${MESSAGE}\",\"type\":\"watchdog\",\"servicename\":\"${SERVICENAME}\",\"machine\":\"${HOST}\"}"
+
+/usr/bin/logger -t fail2ban "Sending message to NOBOD endpoint at ${ACOBY_ENDPOINT}"
+
+/usr/bin/curl \
+  --connect-timeout 30 \
+  --max-time 60 \
+  --user "${ACOBY_USER}:${ACOBY_PASS}" \
+  -s \
+  -S \
+  -X POST \
+  -H "Accept: application/json" \
+  -H "Content-Type: application/json" \
+  -H "User-Agent: acoby-notification/1.0" \
+  -d "${PAYLOAD}" \
+  ${ACOBY_ENDPOINT}
+
+/usr/bin/logger -t fail2ban "Finished message to NOBOD endpoint"
+{% else %}
+/usr/bin/logger -t fail2ban "NOBOD Notification disabled"
+{% endif %}
+
+#eof

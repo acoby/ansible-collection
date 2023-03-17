@@ -1,0 +1,19 @@
+---
+- name: "Add Hostname to /etc/hosts"
+  ansible.builtin.lineinfile:
+    dest: "/etc/hosts"
+    owner: "root"
+    group: "root"
+    mode: "0644"
+    regexp: "{{ hostfile.regexp }}"
+    line: "{{ hostfile.line }}"
+  loop:
+    - name: "IPv4 {{ hostvars[host].network.pan.fqdn }}"
+      regexp: "^{{ hostvars[host].network.pan.ipv4.address }}"
+      line: "{{ hostvars[host].network.pan.ipv4.address }} {{ hostvars[host].network.pan.fqdn }}"
+    - name: "IPv6 {{ hostvars[host].network.pan.fqdn }}"
+      regexp: "^{{ hostvars[host].network.pan.ipv6.address }}"
+      line: "{{ hostvars[host].network.pan.ipv6.address }} {{ hostvars[host].network.pan.fqdn }}"
+  loop_control:
+    loop_var: hostfile
+    label: "{{ hostfile.name }}"

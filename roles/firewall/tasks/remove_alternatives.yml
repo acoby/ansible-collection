@@ -1,0 +1,42 @@
+---
+- name: "Uninstall other firewall alternatives"
+  ansible.builtin.apt:
+    name:
+      - "ufw"
+      - "firewalld"
+    state: "absent"
+
+- name: "Disable iptables-persistent"
+  ansible.builtin.systemd:
+    name: "netfilter-persistent.service"
+    state: "stopped"
+    enabled: false
+  ignore_errors: true
+
+- name: "Check if old firewall-init script still exists"
+  ansible.builtin.stat:
+    path: "/etc/systemd/system/multi-user.target.wants/firewall-init.service"
+  register: _firewall_init_service
+
+- name: "Disable old Firewall Service"
+  become: true
+  ansible.builtin.systemd:
+    name: "firewall-init.service"
+    state: "stopped"
+    enabled: false
+  ignore_errors: true
+  when:
+    - "_firewall_init_service.stat.exists"
+
+- name: "Remove iptables-persistent files"
+  ansible.builtin.file:
+    path: "{{ file.path }}"
+    state: "absent"
+  loop:
+    - path: "/etc/iptables/rules.v4"
+    - path: "/etc/iptables/rules.v6"
+    - path: "/etc/network/firewall/init.sh"
+    - path: "/etc/network/firewall/rules.sh"
+  loop_control:
+    loop_var: file
+    label: "{{ file.path }}"

@@ -1,0 +1,43 @@
+# {{ ansible_managed }}
+
+-A INPUT -i lo -j ACCEPT
+{% if network.lan is defined %}
+-A INPUT -i {{ network.lan.interface }} -j ACCEPT
+{% endif %}
+{% if network.pan is defined %}
+-A INPUT -i {{ network.pan.interface }} -j ACCEPT
+{% endif %}
+-A INPUT -m conntrack --ctstate RELATED,ESTABLISHED -j ACCEPT
+-A INPUT -p ipv6-icmp -j ACCEPT -m comment --comment "allow icmp traffic from gateway via WAN"
+-A INPUT -p ipv6-icmp -j ACCEPT -m comment --comment "allow icmp traffic to gateway via WAN"
+-A INPUT -i {{ network.wan.interface }} -j acoby-external
+-A INPUT -i {{ network.wan.interface }} -j acoby-wan
+-A INPUT -j acoby-pan
+-A INPUT -j acoby-services
+
+# Internal Network
+{% for host in groups['all']|sort %}
+{% if hostvars[host].network.wan.ipv6 is defined %}
+-A acoby-wan -i {{ network.wan.interface }} -s {{ hostvars[host].network.wan.ipv6.address }}/128 -p tcp -m tcp --dport {{ acoby_ssh_port }} -j ACCEPT -m comment --comment "allow ssh traffic from {{ host }} via WAN"
+-A acoby-wan -i {{ network.wan.interface }} -s {{ hostvars[host].network.wan.ipv6.address }}/128 -p ipv6-icmp -j ACCEPT -m comment --comment "allow icmp traffic from {{ host }} via WAN"
+{% endif %}
+{% endfor %}
+
+{% if 'monitoring' in groups %}
+{% for host in groups['monitoring']|sort %}
+{% if hostvars[host].network.wan.ipv4 is defined %}
+-A acoby-wan -i {{ network.wan.interface }} -s {{ hostvars[host].network.wan.ipv6.address }}/128 -p tcp -m tcp --dport 5665 -j ACCEPT -m comment --comment "allow monitoring traffic from {{ host }} via WAN"
+{% endif %}
+{% endfor %}
+{% endif %}
+
+{% for ip in network.wan.ipv6.dns|sort %}
+-A acoby-wan -i {{ network.wan.interface }} -s {{ ip }}/128 -p udp -m udp --dport 53 -j ACCEPT -m comment --comment "allow dns traffic via WAN"
+{% endfor %}
+
+{% if firewall_allow_ipv6 is defined %}
+# External Network
+{% for iprange in firewall_allow_ipv6 %}
+-A acoby-external -i {{ network.wan.interface }} -s {{ iprange.range }}{% if iprange.port is defined %} -p {{ iprange.protocol }} --dport {{ iprange.port }}{% endif %} -j ACCEPT -m comment --comment "allow all traffic from external network"
+{% endfor %}
+{% endif %}

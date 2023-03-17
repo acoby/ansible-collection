@@ -1,0 +1,12 @@
+/* {{ ansible_managed }} */
+
+{% if inventory.monitoring is not defined or inventory.monitoring.master is not defined %}
+apply Service "ntp" {
+  import "generic-service"
+  
+  check_command = "ntp_time"
+
+  assign where host.name == "{{ inventory_hostname }}"
+}
+
+{% endif %}

@@ -1,0 +1,119 @@
+---
+- name: "Uninstall resolvconf"
+  ansible.builtin.apt:
+    name:
+      - "resolvconf"
+    state: "absent"
+
+- name: "Install WireGuard"
+  ansible.builtin.apt:
+    name:
+      - "wireguard-dkms"
+      - "wireguard-tools"
+    state: "present"
+
+- name: "Reboot kernel"
+  when:
+    - "wireguard_kernel_reboot | bool"
+  block:
+    - name: "Check for kernel update"
+      acoby.collection.get_kernel_info:
+        lookup_packages: false
+      register: _wg_kernel_update
+
+    - name: "Reboot for kernel update"
+      throttle: 1
+      ansible.builtin.reboot:
+        msg: "Kernel update detected by Ansible"
+      when: "_wg_kernel_update.new_kernel_exists"
+
+- name: "Install kernel headers on PVE Debian"
+  ansible.builtin.apt:
+    name: "pve-headers"
+    state: "present"
+    update_cache: true
+  when: "'pve' in ansible_kernel"
+
+- name: "Install kernel headers on Default Debian"
+  ansible.builtin.apt:
+    name: "linux-headers-amd64"
+    state: "present"
+    update_cache: true
+  when: "'pve' not in ansible_kernel"
+
+- name: "Enable WireGuard kernel module"
+  community.general.modprobe:
+    name: "wireguard"
+    state: "present"
+  register: wireguard_module_enabled
+  until: "wireguard_module_enabled is succeeded"
+  retries: 10
+  delay: 10
+  failed_when: "wireguard_module_enabled is failure"
+
+- name: "Create WireGuard configurations directories"
+  ansible.builtin.file:
+    path: "{{ directory.path }}"
+    owner: "{{ directory.owner | default('root') }}"
+    group: "{{ directory.group | default('root') }}"
+    mode: "{{ directory.mode | default('0700') }}"
+    state: "{{ directory.state | default('directory') }}"
+  loop:
+    - path: "{{ wireguard_path }}"
+    - path: "{{ wireguard_path }}/firewall"
+    - path: "{{ wireguard_path }}/firewall/{{ network.pan.interface }}"
+  loop_control:
+    loop_var: directory
+    label: "{{ directory.path }}"
+
+- name: "Generate Wireguard server configuration"
+  ansible.builtin.template:
+    src: "{{ template.src }}"
+    dest: "{{ template.dest }}"
+    owner: "{{ template.owner | default('root') }}"
+    group: "{{ template.group | default('root') }}"
+    mode: "{{ template.mode | default('0644') }}"
+  loop:
+    - src: "firewall/firewall.sh.j2"
+      dest: "{{ wireguard_path }}/firewall_{{ network.pan.interface }}.sh"
+      mode: "0700"
+    - src: "firewall/rules/generic.up.j2"
+      dest: "{{ wireguard_path }}/firewall/{{ network.pan.interface }}/_generic.up"
+      mode: "0700"
+    - src: "firewall/rules/generic.down.j2"
+      dest: "{{ wireguard_path }}/firewall/{{ network.pan.interface }}/_generic.down"
+      mode: "0700"
+    - src: "wireguard/wg0.conf.j2"
+      dest: "{{ wireguard_path }}/{{ network.pan.interface }}.conf"
+      mode: "0600"
+  loop_control:
+    loop_var: template
+    label: "{{ template.src }}"
+  register: __wireguard_templates
+
+- name: "Start Wireguard server"
+  ansible.builtin.systemd:
+    name: "wg-quick@{{ network.pan.interface }}"
+    state: "started"
+    enabled: true
+    daemon_reload: true
+  register: __wireguard_service
+
+- name: "Restart Wireguard server"
+  ansible.builtin.systemd:
+    name: "wg-quick@{{ network.pan.interface }}"
+    state: "restarted"
+  when:
+    - "__wireguard_templates.changed"
+    - "not __wireguard_service.changed"
+
+- name: "Define PAN hostnames"
+  ansible.builtin.include_tasks: configure_hostnames.yml
+  loop: "{{ groups[wireguard_pan_group] }}"
+  loop_control:
+    loop_var: host
+  when:
+    - "not wireguard_dns_available | bool"
+    - "hostvars[host].network is defined"
+    - "hostvars[host].network.pan is defined"
+    - "hostvars[host].network.pan.fqdn is defined"

@@ -1,0 +1,5 @@
+# Ansible managed
+
+nagios ALL=(root) NOPASSWD:/usr/lib/nagios/plugins/check_*
+
+#eof

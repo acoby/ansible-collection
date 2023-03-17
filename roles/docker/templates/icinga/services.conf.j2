@@ -1,0 +1,13 @@
+/* {{ ansible_managed }} */
+
+{% if inventory.monitoring is not defined or inventory.monitoring.master is not defined %}
+apply Service "docker" {
+  import "generic-service"
+
+  check_command = "check_docker"
+  check_timeout = 120
+
+  assign where host.name == "{{ inventory_hostname }}" && host.vars.os.contains("debian")
+}
+
+{% endif %}

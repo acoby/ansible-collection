@@ -1,0 +1,49 @@
+# Manage root user account
+---
+- name: "Update root User's Password"
+  ansible.builtin.user:
+    name: "root"
+    password: "{{ inventory.root_password }}"
+  no_log: true
+  when:
+    - "inventory is defined"
+    - "inventory.root_password is defined"
+
+- name: "Set up root Users authorized keys"
+  ansible.posix.authorized_key:
+    user: root
+    state: present
+    key: "{{ user.pubkey }}"
+  when: "owner is defined and owner.users is defined and user.pubkey is defined and 'ADMIN' in user.roles"
+  loop: "{{ owner.users | default([]) }}"
+  loop_control:
+    loop_var: user
+    label: "{{ user.username }}"
+  no_log: true
+
+- name: "Configure Files"
+  ansible.builtin.copy:
+    src: "{{ file.source }}"
+    dest: "{{ file.destination }}"
+    owner: "{{ file.owner | default('root') }}"
+    group: "{{ file.group | default('root') }}"
+    mode: "{{ file.mode | default('0644') }}"
+  loop:
+    - source: "bashrc"
+      destination: "/root/.bashrc"
+    - source: "bash_aliases"
+      destination: "/root/.bash_aliases"
+  loop_control:
+    loop_var: file
+
+- name: "Configure MTA"
+  ansible.builtin.template:
+    src: "{{ item.src }}"
+    dest: "{{ item.dest }}"
+    owner: "root"
+    group: "root"
+    mode: "{{ item.mode | default('0644') }}"
+  loop:
+    - src: "mail.rc.j2"
+      dest: "/root/.mailrc"
+      mode: "0440"

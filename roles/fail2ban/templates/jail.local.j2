@@ -1,0 +1,22 @@
+# {{ ansible_managed }}
+
+[DEFAULT]
+bantime  = 86400s
+findtime  = 600s
+maxretry = 3
+
+ignoreip = 127.0.0.1/8 ::1 {{ fail2ban_ignore_ips | sort | join(' ') }}
+ignorself = true
+
+destemail = {{ inventory.mail.recipient }}
+sender = {{ inventory.mail.from }}
+sendername = acoby Fail2ban
+mta = sendmail
+
+action_nobod = %(action_)s
+               nobod[sender="%(sender)s", dest="%(destemail)s", logpath="%(logpath)s", chain="%(chain)s"]
+
+action = %(action_nobod)s
+
+
+#eof

@@ -1,0 +1,55 @@
+---
+- name: "Copy icinga ntp checks"
+  ansible.builtin.copy:
+    src: "{{ file.source }}"
+    dest: "{{ file.destination }}"
+    owner: "{{ file.owner | default('root') }}"
+    group: "{{ file.group | default('root') }}"
+    mode: "{{ file.mode | default('0755') }}"
+  loop:
+    - source: "check_ntpq"
+      destination: "/usr/lib/nagios/plugins/check_ntpq"
+      target: "linux"
+  loop_control:
+    loop_var: file
+    label: "{{ file.source }}"
+  when:
+    - "file.target in group_names"
+
+- name: "Copy Icinga Commands and Services"
+  ansible.builtin.template:
+    src: "{{ template.src }}"
+    dest: "{{ template.dest }}"
+    owner: "{{ template.owner | default('nagios') }}"
+    group: "{{ template.group | default('nagios') }}"
+    mode: "{{ template.mode | default('0440') }}"
+  loop:
+    - src: "icinga/services.conf.j2"
+      dest: "/etc/icinga2/conf.d/services_ntp.conf"
+    - src: "icinga/commands.conf.j2"
+      dest: "/etc/icinga2/conf.d/commands_ntp.conf"
+  loop_control:
+    loop_var: template
+  notify: "Restart Icinga2"
+
+- name: "Check, if check_ntp_timeX already exists"
+  ansible.builtin.stat:
+    path: "/usr/lib/nagios/plugins/check_ntp_timeX"
+  register: check_ntp_time
+
+- name: "Replace check_ntp_time"
+  when:
+    - "not check_ntp_time.stat.exists"
+  block:
+    - name: "Move check_ntp_time to check_ntp_timeX"
+      ansible.builtin.command: "mv /usr/lib/nagios/plugins/check_ntp_time /usr/lib/nagios/plugins/check_ntp_timeX"
+      args:
+        creates: "/usr/lib/nagios/plugins/check_ntp_timeX"
+
+    - name: "Copy patched check_ntp_time"
+      ansible.builtin.copy:
+        src: "check_ntp_time"
+        dest: "/usr/lib/nagios/plugins/check_ntp_time"
+        owner: "root"
+        group: "root"
+        mode: "0755"

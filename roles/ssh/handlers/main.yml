@@ -1,0 +1,15 @@
+---
+- name: "Restart SSH"
+  become: true
+  ansible.builtin.service:
+    name: "sshd"
+    state: "restarted"
+  failed_when: false
+
+- name: "Restart Fail2Ban"
+  become: true
+  ansible.builtin.service:
+    name: "fail2ban"
+    state: "restarted"
+    enabled: true
+  failed_when: false

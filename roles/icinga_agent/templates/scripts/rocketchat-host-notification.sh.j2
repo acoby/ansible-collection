@@ -1,0 +1,31 @@
+#!/bin/bash
+# {{ ansible_managed }}
+
+{% if inventory.monitoring is defined and inventory.monitoring.notification is defined and inventory.monitoring.notification.rocketchat is defined and infrastructure.monitoring.notification is defined %}
+message=`echo "${HOSTOUTPUT}" | tr "\n" " "`
+
+ICINGA_HOSTNAME="{{ inventory.monitoring.master_domain }}"
+ROCKETCHAT_WEBHOOK_URL="{{ inventory.monitoring.notification.rocketchat.webhook }}"
+ICINGA2HOST="{{ inventory_hostname }}"
+
+#Set the message icon based on ICINGA service state
+if [ "$HOSTSTATE" = "DOWN" ]
+then
+    ICON=":exclamation:"
+elif [ "$HOSTSTATE" = "UP" ]
+then
+    ICON=":white_check_mark:"
+else
+    ICON=":white_medium_square:"
+fi
+
+#Send message to Rocket.Chat
+PAYLOAD="payload={\"text\": \"${ICON} ${NOTIFICATIONTYPE} the host ${HOSTDISPLAYNAME}](https://${ICINGA_HOSTNAME}/icingaweb2/monitoring/host/services?host=${HOSTNAME}) is in state *${HOSTSTATE}* with check output ${message} on check host ${ICINGA2HOST}.\"}"
+
+/usr/bin/logger -t icinga2 "Sending message to Rocket.Chat endpoint at ${ROCKETCHAT_WEBHOOK_URL}"
+curl --connect-timeout 30 --max-time 60 -s -S -X POST --data-urlencode "${PAYLOAD}" "${ROCKETCHAT_WEBHOOK_URL}"
+{% else %}
+/usr/bin/logger -t icinga2 "Rocket.Chat Notification disabled"
+{% endif %}
+
+# eof

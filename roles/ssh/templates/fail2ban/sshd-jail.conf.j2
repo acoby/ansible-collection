@@ -1,0 +1,8 @@
+# {{ ansible_managed }}
+
+[sshd]
+enabled = true
+port = ssh,{{ acoby_ssh_port }}
+mode   = normal
+logpath = %(sshd_log)s
+backend = %(sshd_backend)s

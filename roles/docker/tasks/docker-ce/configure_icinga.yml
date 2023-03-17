@@ -1,0 +1,32 @@
+---
+- name: "Copy icinga ntp checks"
+  ansible.builtin.copy:
+    src: "{{ file.source }}"
+    dest: "{{ file.destination }}"
+    owner: "{{ file.owner | default('root') }}"
+    group: "{{ file.group | default('root') }}"
+    mode: "{{ file.mode | default('0755') }}"
+  loop:
+    - source: "check_docker"
+      destination: "/usr/lib/nagios/plugins/check_docker"
+    - source: "check_dockercompose"
+      destination: "/usr/lib/nagios/plugins/check_dockercompose"
+  loop_control:
+    loop_var: file
+    label: "{{ file.source }}"
+
+- name: "Copy Icinga Commands and Services"
+  ansible.builtin.template:
+    src: "{{ template.src }}"
+    dest: "{{ template.dest }}"
+    owner: "{{ template.owner | default('nagios') }}"
+    group: "{{ template.group | default('nagios') }}"
+    mode: "{{ template.mode | default('0440') }}"
+  loop:
+    - src: "icinga/services.conf.j2"
+      dest: "/etc/icinga2/conf.d/services_docker.conf"
+    - src: "icinga/commands.conf.j2"
+      dest: "/etc/icinga2/conf.d/commands_docker.conf"
+  loop_control:
+    loop_var: template
+  notify: "Restart Icinga2"

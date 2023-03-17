@@ -1,0 +1,20 @@
+---
+dependencies:
+  - role: acoby.pan
+
+galaxy_info:
+  namespace: acoby
+  role_name: docker
+  author: Thoralf Rickert-Wendt
+  description: A docker role for all system
+  company: Acoby GmbH
+  license: MIT
+  min_ansible_version: "2.12"
+  platforms:
+    - name: Debian
+      versions:
+        - bullseye
+  galaxy_tags:
+    - cloud
+    - development
+    - system

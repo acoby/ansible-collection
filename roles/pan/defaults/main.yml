@@ -1,0 +1,9 @@
+---
+wireguard_port: "{{ acoby_pan_port | int }}"
+wireguard_pan_group: "linux"
+wireguard_service_group: "service_wireguard"
+wireguard_nobod_service_group: "wireguard_services"
+wireguard_icinga_check: true
+wireguard_dns_available: true
+wireguard_path: "/etc/wireguard"
+wireguard_kernel_reboot: false

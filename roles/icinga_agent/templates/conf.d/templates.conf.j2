@@ -1,0 +1,161 @@
+/* {{ ansible_managed }} */
+
+template Host "generic-host" {
+  max_check_attempts = 3
+  check_interval = 1m
+  retry_interval = 30s
+
+  check_command = "hostalive"
+
+  vars.notification["mail"] = {
+    groups = [ "icingaadmins" ]
+  }
+
+  vars.notification["rocketchat"] = {
+    groups = [ "icingaadmins" ]
+  }
+
+  vars.notification["nobod"] = {
+    groups = [ "nobod_operators" ]
+  }
+}
+
+template Service "generic-service" {
+  max_check_attempts = 5
+  check_interval = 1m
+  retry_interval = 30s
+  
+  vars.notification["mail"] = {
+    groups = [ "icingaadmins" ]
+  }
+
+  vars.notification["rocketchat"] = {
+    groups = [ "icingaadmins" ]
+  }
+
+  vars.notification["nobod"] = {
+    groups = [ "nobod_operators" ]
+  }
+}
+
+template User "generic-user" {
+}
+
+{% if inventory.monitoring is not defined or inventory.monitoring.master is not defined %}
+
+template Host "acoby-machine" {
+  import "generic-host"
+  check_command = "hostalive"
+  
+  enable_notifications = true
+  enable_active_checks = true
+  enable_passive_checks = true
+  enable_event_handler = true
+  enable_flapping = true
+  enable_perfdata = true
+  volatile = true
+
+  vars.ssh_port = "22446"
+  vars.ntp_address = "{{ ntp_area }}.pool.ntp.org"
+
+  vars.procs_critical = 750
+  vars.procs_warning = 650
+}
+
+template Host "hetzner-vm" {
+  import "acoby-machine"
+  
+  icon_image = "tux.png"
+  icon_image_alt = "Hetzner Cloud VM"
+  vars.os = "Linux"
+  vars.type = "vm"
+}
+
+template Host "proxmox-vm" {
+  import "acoby-machine"
+  
+  icon_image = "tux.png"
+  icon_image_alt = "Proxmox VM"
+  vars.os = "Linux"
+  vars.type = "vm"
+}
+
+template Host "proxmox-host" {
+  import "acoby-machine"
+  
+  icon_image = "tux.png"
+  icon_image_alt = "Proxmox Host"
+  vars.os = "Linux"
+  vars.type = "proxmox"
+}
+
+{% endif %}
+/* -------------------------------------------------------------------------------- */
+
+template Notification "host-notification-template" {
+  states = [ Up, Down ]
+  types = [ Problem, Acknowledgement, Recovery, Custom, FlappingStart, FlappingEnd, DowntimeStart, DowntimeEnd, DowntimeRemoved ]
+
+  period = "24x7"
+  interval = 24h
+  vars.notification_logtosyslog = true
+}
+
+template Notification "service-notification-template" {
+  states = [ OK, Warning, Critical, Unknown ]
+  types = [ Problem, Acknowledgement, Recovery, Custom, FlappingStart, FlappingEnd, DowntimeStart, DowntimeEnd, DowntimeRemoved ]
+
+  period = "24x7"
+  interval = 24h
+  vars.notification_logtosyslog = true
+}
+
+/* -------------------------------------------------------------------------------- */
+
+template Notification "mail-host-notification-template" {
+  import "host-notification-template"
+  command = "mail-host-notification"
+
+  vars += {
+{% if inventory.monitoring is defined and inventory.monitoring.master_domain is defined %}
+    notification_icingaweb2url = "https://{{ inventory.monitoring.master_domain }}/"
+{% endif %}
+    notification_from = "{{ inventory.mail.name }} <{{ inventory.mail.from }}>"
+  }
+}
+
+template Notification "mail-service-notification-template" {
+  import "service-notification-template"
+  command = "mail-service-notification"
+
+  vars += {
+{% if inventory.monitoring is defined and inventory.monitoring.master_domain is defined %}
+    notification_icingaweb2url = "https://{{ inventory.monitoring.master_domain }}/"
+{% endif %}
+    notification_from = "{{ inventory.mail.name }} <{{ inventory.mail.from }}>"
+  }
+}
+
+/* -------------------------------------------------------------------------------- */
+
+template Notification "rocketchat-host-notification-template" {
+  import "host-notification-template"
+  command = "rocketchat-host-notification"
+}
+
+template Notification "rocketchat-service-notification-template" {
+  import "service-notification-template"
+  command = "rocketchat-service-notification"
+}
+
+/* -------------------------------------------------------------------------------- */
+
+template Notification "acoby-host-notification-template" {
+  import "host-notification-template"
+  command = "acoby-host-notification"
+}
+
+template Notification "acoby-service-notification-template" {
+  import "service-notification-template"
+  command = "acoby-service-notification"
+}

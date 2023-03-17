@@ -1,0 +1,41 @@
+#!/bin/bash
+# Ansible managed
+
+BASE_PATH={{ wireguard_path }}/firewall//{{ network.pan.interface }}
+{% raw %}
+run_scripts() {
+  local EXT=$1
+  local chk_files=(${BASE_PATH}/*.${EXT})
+
+  if (( ${#chk_files[*]} )); then
+    for file in $BASE_PATH/*.$EXT; do
+      source $file
+    done
+  fi
+}
+
+status() {
+  iptables -L -n -x -v
+  ip6tables -L -n -x -v
+}
+
+case "$1" in
+  start)
+    run_scripts "up"
+    ;;
+  stop)
+    run_scripts "down"
+    ;;
+  status)
+    status
+    ;;
+  restart)
+    run_scripts "down"
+    run_scripts "up"
+    ;;
+  *)
+    echo "Use $0 start|stop|restart"
+    ;;
+esac
+{% endraw %}
+#eof

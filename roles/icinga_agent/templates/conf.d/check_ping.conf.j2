@@ -1,0 +1,55 @@
+/* {{ ansible_managed }} */
+
+{% for checkhost in monitor.check.ping %}
+
+{% if hostvars[checkhost] is defined %}
+/** **************************************************************** */
+/** {{ checkhost }} */
+/*
+object Host "{{ checkhost }}" {
+  import "generic-host"
+
+{% if hostvars[checkhost].network.wan.ipv4 is defined %}
+  address = "{{ hostvars[checkhost].network.wan.ipv4.address }}"
+{% endif %}
+{% if hostvars[checkhost].network.wan.ipv6 is defined and monitor.check.ping_ipv6 is defined and monitor.check.ping_ipv6 == "true" %}
+  address6 = "{{ hostvars[checkhost].network.wan.ipv6.address }}"
+{% endif %}
+
+  check_command = "hostalive"
+
+  vars.os = "Linux"
+  
+  vars.notification["mail"] = {
+    groups = [ "icingaadmins" ]
+  }
+  vars.notification["rocketchat"] = {
+    groups = [ "icingaadmins" ]
+  }
+  vars.notification["nobod"] = {
+    groups = [ "nobod_operators" ]
+  }
+}
+
+{% if hostvars[checkhost].network.wan.ipv4 is defined %}
+apply Service "{{ checkhost }} - PING4" {
+  import "generic-service"
+
+  check_command = "ping4"
+
+  assign where host.name == "{{ checkhost }}"
+}
+{% endif %}
+
+{% if hostvars[checkhost].network.wan.ipv6 is defined and monitor.check.ping_ipv6 is defined and monitor.check.ping_ipv6 == "true" %}
+apply Service "{{ checkhost }} - PING6" {
+  import "generic-service"
+
+  check_command = "ping6"
+
+  assign where host.name == "{{ checkhost }}"
+}
+{% endif %}
+*/
+{% endif %}
+{% endfor %}

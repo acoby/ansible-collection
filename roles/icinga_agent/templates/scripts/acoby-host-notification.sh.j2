@@ -1,0 +1,39 @@
+#!/bin/bash
+# {{ ansible_managed }}
+
+{% if inventory.monitoring is defined and inventory.monitoring.notification is defined and inventory.monitoring.notification.acoby is defined %}
+message=`echo "${HOSTOUTPUT}" | tr "\n" " "`
+
+ACOBY_ENDPOINT="{{ inventory.monitoring.notification.acoby.endpoint }}"
+ACOBY_USER="{{ inventory.monitoring.notification.acoby.username }}"
+ACOBY_PASS="{{ inventory.monitoring.notification.acoby.password }}"
+
+if [ "$HOSTSTATE" = "DOWN" ]; then
+    SERVICESTATE="CRITICAL"
+elif [ "$HOSTSTATE" = "UP" ]; then
+    SERVICESTATE="OK"
+else
+    SERVICESTATE="CRITICAL"
+fi
+
+PAYLOAD="{\"state\":\"${SERVICESTATE}\",\"message\":\"${message}\",\"type\":\"icinga\",\"servicename\":\"host_check\",\"machine\":\"${HOSTNAME}\"}"
+
+/usr/bin/logger -t icinga2 "Sending message to NOBOD endpoint at ${ACOBY_ENDPOINT}"
+#/usr/bin/curl \
+#  --connect-timeout 30 \
+#  --max-time 60 \
+#  --user "${ACOBY_USER}:${ACOBY_PASS}" \
+#  -s \
+#  -S \
+#  -X POST \
+#  -H "Accept: application/json" \
+#  -H "Content-Type: application/json" \
+#  -H "User-Agent: acoby-notification/1.0" \
+#  -d "${PAYLOAD}" \
+#  ${ACOBY_ENDPOINT}
+/usr/bin/logger -t icinga2 "Finished message to NOBOD endpoint"
+{% else %}
+/usr/bin/logger -t icinga2 "NOBOD Notification disabled"
+{% endif %}
+
+#eof

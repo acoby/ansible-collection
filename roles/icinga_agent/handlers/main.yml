@@ -1,0 +1,8 @@
+---
+- name: "Restart Icinga2"
+  become: true
+  ansible.builtin.service:
+    name: "icinga2"
+    state: "restarted"
+    enabled: true
+  failed_when: false

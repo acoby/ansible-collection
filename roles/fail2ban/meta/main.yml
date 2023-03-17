@@ -1,0 +1,19 @@
+---
+dependencies:
+  - role: acoby.common
+
+galaxy_info:
+  namespace: acoby
+  role_name: fail2ban
+  author: Thoralf Rickert-Wendt
+  description: A role to setup fail2ban
+  company: Acoby GmbH
+  license: MIT
+  min_ansible_version: "2.12"
+  platforms:
+    - name: Debian
+      versions:
+        - bullseye
+  galaxy_tags:
+    - cloud
+    - system

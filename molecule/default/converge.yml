@@ -1,7 +1,11 @@
 ---
-- name: Converge
-  hosts: all
+- name: "Converge"
+  hosts: "all"
+
+  collections:
+    - acoby.collection
+
   tasks:
-    - name: "Include ansible-collection"
-      include_role:
-        name: "ansible-collection"
+    - name: "Assign role"
+      ansible.builtin.include_role:
+        name: "acoby.common"

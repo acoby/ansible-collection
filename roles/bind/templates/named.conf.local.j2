@@ -1,0 +1,19 @@
+## {{ ansible_managed }}
+
+# private area network
+zone "{{ network.domain }}" {
+    type master;
+    file "{{ bind_config_path }}/db.{{ network.domain }}";
+};
+
+# private area network zone - reverse ipv4
+zone "{{ network.range.ipv4 | ipaddr('revdns') | regex_replace('^[0-9]+\\.', '') }}" {
+    type master;
+    file "{{ bind_config_path }}/db.{{ network.domain }}.rev.ipv4";
+};
+
+# private area network zone - reverse ipv6
+zone "{{ (network.range.ipv6 | ipaddr('revdns'))[-(9+(network.range.ipv6|regex_replace('^.*/','')|int)//2):] }}" {
+    type master;
+    file "{{ bind_config_path }}/db.{{ network.domain }}.rev.ipv6";
+};

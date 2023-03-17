@@ -1,0 +1,146 @@
+#!/usr/bin/env python3
+
+"check_nobod is a nagios compatible plugin to check nobod instances"
+
+import argparse
+import json
+import logging
+import os
+import requests
+import sys
+
+from requests.packages.urllib3.exceptions import InsecureRequestWarning
+from requests.adapters import HTTPAdapter
+
+requests.packages.urllib3.disable_warnings(InsecureRequestWarning)
+
+logging.basicConfig(format='%(asctime)s [%(levelname)s] %(message)s', level=logging.INFO)
+
+HTTP_TIMEOUT = 10
+HTTP_VERIFY_SSL = False
+SCRIPT_VERSION = 'v1.0.0'
+
+STATE_OK=0
+STATE_WARNING=1
+STATE_CRITICAL=2
+STATE_UNKNOWN=3
+
+# -----------------------------------------------------------------
+#
+def get_status(args):
+  response = None
+  
+  url = args.url + '/api/status'
+  headers = dict()
+  headers['Accept'] = 'application/json'
+  headers['User-Agent'] = 'nobod-check-script/{}'.format(SCRIPT_VERSION)
+  headers['Connection'] = 'close'
+    
+  try:
+    result = requests.get(url, timeout=args.http_timeout, headers=headers, verify=args.tls_verify)
+    
+    if result.status_code == 200:
+      result.encoding = 'utf-8'
+      response = json.loads(result.text)
+    else:
+      result.encoding = 'utf-8'
+      error_msg = json.loads(result.text)
+      logging.error('syntax error in request {} and response {}'.format(url, error_msg))
+    
+  except BaseException as err:
+    logging.error('Could not read response from NOBOD.\n{}'.format(err))
+    response = None
+
+  return response
+
+def get_nagios_state(state):
+  if state == STATE_OK:
+    return 'OK'
+  elif state == STATE_WARNING:
+    return 'WARNING'
+  elif state == STATE_CRITICAL:
+    return 'CRITICAL'
+  else:
+    return 'UNKNOWN'
+
+def exit(state,msg,perfdata = None):
+  if perfdata == None:
+    print("{}: {}".format(get_nagios_state(state),msg))
+  else:
+    print("{}: {} | {}".format(get_nagios_state(state),msg,perfdata))
+  sys.exit(state)
+
+def main():
+  parser = argparse.ArgumentParser(description='Check docker processes.')
+  parser.add_argument('-w', '--warning'     , type=int , help='warning worker count (default 1)', default=1)
+  parser.add_argument('-c', '--critical'    , type=int , help='critcal worker count (default 1)', default=1)
+  parser.add_argument('-U', '--url'         , type=str , help='an URL to the NOBOD API')
+  parser.add_argument('-v', '--tls-verify'  , type=bool, help='check a valid TLS connection'   , default=HTTP_VERIFY_SSL)
+  parser.add_argument('-t', '--http-timeout', type=int , help='wait for that time for the API' , default=HTTP_TIMEOUT)
+  args = parser.parse_args()
+  
+  s = requests.Session()
+
+  if args.url is not None:
+    s.mount(args.url, HTTPAdapter(max_retries=5))
+  else:
+    exit(STATE_UNKNOWN,"NOBOD API URL not defined")
+  
+  if args.warning < args.critical:
+    exit(STATE_UNKNOWN,"Warning Worker Count must be less then Critical Worker Count")
+
+  response = get_status(args)
+  overall = -1
+  diff = None
+  lastRun = -1
+  workerCount = 0
+  
+  if response == None:
+    exit(STATE_UNKNOWN,"NOBOD API not responding")
+  elif 'state' in response and 'worker' in response['state']:
+    for workerId in response['state']['worker']:
+      worker = response['state']['worker'][workerId]
+      workerCount+=1
+      diff = worker['diff']
+      if 'lastRun' in worker:
+        lastRun = worker['lastRun']
+      if worker['state'] == 'CRITICAL':
+        overall = STATE_CRITICAL
+      elif worker['state'] == 'WARNING' and overall < STATE_WARNING:
+        overall = STATE_WARNING
+      elif worker['state'] == 'OK' and overall < STATE_OK:
+        overall = STATE_OK
+
+  if overall < 0:
+    overall = STATE_UNKNOWN
+
+  msg = '{} worker(s) online'.format(workerCount)
+  perfdata = 'workerCount={}'.format(workerCount)
+  if diff is not None:
+    msg = '{} worker(s) online, last run {} ago'.format(workerCount,diff)
+  if lastRun >= 0:
+    perfdata = '{} lastrun={}'.format(perfdata,lastRun)
+
+  if workerCount < args.critical:
+    overall = STATE_CRITICAL
+  elif workerCount < args.warning:
+    overall = STATE_WARNING
+
+  jobcount = 0
+  if 'state' in response and 'jobs' in response['state']:
+    jobcount = response['state']['jobs']['count']
+    msg = '{} and {} job(s) running'.format(msg,jobcount)
+    perfdata = '{} jobCount={}'.format(perfdata,jobcount)
+
+  if overall == STATE_OK:
+    if jobcount > 0:
+      overall = STATE_CRITICAL
+
+  exit(overall,msg,perfdata)
+
+
+if __name__ == '__main__':
+  try:
+    main()
+  except Exception as e:
+    exit(STATE_UNKNOWN,str(e))

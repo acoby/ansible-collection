@@ -1,0 +1,13 @@
+[Unit]
+Description=Firewall Rules
+After=network.target
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+ExecStart=/etc/network/firewall/env.sh start
+ExecStop=/etc/network/firewall/env.sh stop
+
+
+[Install]
+WantedBy=multi-user.target

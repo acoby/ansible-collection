@@ -1,0 +1,64 @@
+# role: icinga2 satellite or agent
+---
+- name: "Set instance facts for agents where parent is master"
+  ansible.builtin.set_fact:
+    monitoring_master_hostname: "{{ inventory.monitoring.master }}"
+    monitoring_master_port: "{{ inventory.monitoring.port }}"
+    monitoring_master_instance: "{{ inventory.monitoring.id }}"
+    monitoring_parent_hostname: "{{ inventory.monitoring.master }}"
+    monitoring_parent_port: "{{ inventory.monitoring.port }}"
+    monitoring_parent_zone_name: "master"
+    monitoring_parent_zone_endpoint: "{{ inventory.monitoring.master_domain }}"
+  when: infrastructure.parent == 'master'
+
+- name: "Set instance facts for agents where parent is not master"
+  ansible.builtin.set_fact:
+    monitoring_master_hostname: "{{ inventory.monitoring.master }}"
+    monitoring_master_port: "{{ inventory.monitoring.port }}"
+    monitoring_master_instance: "{{ inventory.monitoring.id }}"
+    monitoring_parent_hostname: "{{ infrastructure.parent }}"
+    monitoring_parent_port: "{{ monitoring_node_port }}"
+    monitoring_parent_zone_name: "{{ infrastructure.parent }}"
+    monitoring_parent_zone_endpoint: "{{ infrastructure.parent }}"
+  when: infrastructure.parent != 'master'
+
+- name: "Install Icinga2 packages"
+  ansible.builtin.include_tasks: install.yml
+
+- name: "Find local ticket salt"
+  ansible.builtin.stat:
+    path: "/etc/icinga2/.ticketsalt"
+  register: icinga_satellite_ticket_stat
+
+- name: "Create ticket salt, when not available"
+  ansible.builtin.set_fact:
+    ticket_salt: "{{ lookup('password', '/dev/null length=40 chars=ascii_letters') }}"
+  when: "not icinga_satellite_ticket_stat.stat.exists"
+
+- name: "Create ticket salt, when not available"
+  ansible.builtin.lineinfile:
+    create: true
+    owner: "root"
+    group: "root"
+    mode: "0440"
+    dest: "/etc/icinga2/.ticketsalt"
+    regexp: "^{{ ticket_salt }}"
+    line: "{{ ticket_salt }}"
+  when: "not icinga_satellite_ticket_stat.stat.exists"
+
+- name: "Read Ticket Salt from Cache"
+  ansible.builtin.command: "cat /etc/icinga2/.ticketsalt"
+  register: icinga_satellite_ticketsalt
+  changed_when: "icinga_satellite_ticketsalt.rc != 0"
+
+- name: "Configure Icinga2 agent settings"
+  ansible.builtin.include_tasks: configure.yml
+
+- name: "Configure Icinga2 pki settings"
+  ansible.builtin.include_tasks: pki.yml
+
+- name: "Start Icinga2 Service"
+  ansible.builtin.service:
+    name: icinga2
+    state: started
+    enabled: true

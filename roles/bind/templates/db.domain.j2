@@ -1,0 +1,25 @@
+; {{ ansible_managed }}
+;
+; BIND data file for local network
+;
+$TTL  6800
+@ IN  SOA wiregate.{{ network.domain }}. root.{{ network.domain }}. (
+           {{ bind_serial }}   ; Serial
+          600   ; Refresh
+        86400   ; Retry
+       604800   ; Expire
+       604800 ) ; Negative Cache TTL
+;
+; name servers - NS records
+     IN      NS      wiregate.{{ network.domain }}.
+
+; {{ network.range.ipv4 }} - {{ network.domain }}
+{% for entry in network.dns.entries %}
+{% if entry.ipv4 is defined and entry.ipv4 is not none %}
+{{ entry.name }}.    IN      A      {{ entry.ipv4 | ipaddr('address') }}
+{% endif %}
+{% if entry.ipv6 is defined and entry.ipv6 is not none %}
+{{ entry.name }}.    IN      AAAA   {{ entry.ipv6 | ipaddr('address') }}
+{% endif %}
+*.{{ entry.name }}.  IN      CNAME  {{ entry.name }}.
+{% endfor %}

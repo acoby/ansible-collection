@@ -1,0 +1,13 @@
+# {{ ansible_managed }}
+
+*filter
+:INPUT DROP [0:0]
+:FORWARD ACCEPT [0:0]
+:OUTPUT ACCEPT [0:0]
+
+:acoby-wan - [0:0]
+:acoby-external - [0:0]
+:acoby-pan - [0:0]
+:acoby-services - [0:0]
+
+#eof

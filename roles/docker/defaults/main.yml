@@ -1,0 +1,26 @@
+---
+sandbox_solution: "docker-ce"
+docker_packages:
+  - "docker-ce"
+  - "docker-ce-cli"
+  - "containerd.io"
+  - "docker-compose-plugin"
+  - "python3-docker"
+  - "python3-dockerpty"
+  - "python3-grpcio"
+docker_pip_packages:
+  - "pyhelm"
+docker_service_dependencies: []
+podman_packages:
+  - "libseccomp2"
+  - "uidmap"
+  - "fuse3"
+  - "fuse-overlayfs"
+  - "podman"
+  - "python3-podman-compose"
+  - "containernetworking-plugins"
+  - "podman-aardvark-dns"
+  - "podman-docker"
+  - "podman-gvproxy"
+  - "podman-netavark"
+  - "slirp4netns"

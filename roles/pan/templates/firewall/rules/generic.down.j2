@@ -1,0 +1,30 @@
+# {{ ansible_managed }}
+
+# flush chain
+iptables  -F acoby-pan
+ip6tables -F acoby-pan
+
+{% if not firewall_enabled|bool %}
+# remove forward all traffic thru custom chain
+iptables  -D INPUT -j acoby-pan
+ip6tables -D INPUT -j acoby-pan
+
+# remove chain
+iptables  -X acoby-pan || true
+ip6tables -X acoby-pan || true
+{% endif %}
+{% if inventory_hostname in groups[wireguard_service_group] %}
+{% if network.wan.ipv4 is defined %}
+# remove ipv4 forward rules for wireguard gateways
+iptables         -D FORWARD -i {{ network.pan.interface }} -j ACCEPT -m comment --comment "allow incoming traffic forward to PAN interface"
+iptables         -D FORWARD -o {{ network.pan.interface }} -j ACCEPT -m comment --comment "allow outgoing traffic forward to PAN interface"
+iptables  -t nat -D POSTROUTING -o {{ network.wan.interface }} -j MASQUERADE -m comment --comment "mask all traffic via external interface"
+{% endif %}
+
+{% if network.wan.ipv6 is defined %}
+# remove ipv6 forward rules for wireguard gateways
+ip6tables        -D FORWARD -i {{ network.pan.interface }} -j ACCEPT -m comment --comment "allow incoming traffic forward to PAN interface"
+ip6tables        -D FORWARD -o {{ network.pan.interface }} -j ACCEPT -m comment --comment "allow outgoing traffic forward to PAN interface"
+ip6tables -t nat -D POSTROUTING -o {{ network.wan.interface }} -j MASQUERADE -m comment --comment "mask all traffic via external interface"
+{% endif %}
+{% endif %}

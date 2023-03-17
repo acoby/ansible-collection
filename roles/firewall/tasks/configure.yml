@@ -1,0 +1,72 @@
+---
+- name: "Install Firewall Dependencies"
+  ansible.builtin.apt:
+    name: "{{ firewall_packages }}"
+    state: "present"
+
+- name: "Remove old configurations"
+  ansible.builtin.include_tasks: remove_alternatives.yml
+
+- name: "Setup Firewall directories"
+  ansible.builtin.file:
+    path: "{{ directory.path }}"
+    owner: "{{ directory.owner | default('root') }}"
+    group: "{{ directory.group | default('root') }}"
+    mode: "{{ directory.mode | default('0700') }}"
+    state: "directory"
+  with_items:
+    - path: "/etc/network/firewall/"
+    - path: "/etc/network/firewall/filter.v4.d"
+    - path: "/etc/network/firewall/filter.v6.d"
+    - path: "/etc/network/firewall/nat.v4.d"
+    - path: "/etc/network/firewall/nat.v6.d"
+  loop_control:
+    loop_var: directory
+    label: "{{ directory.path }}"
+
+- name: "Remove old Firewall files"
+  ansible.builtin.file:
+    path: "{{ file.path }}"
+    state: "absent"
+  with_items:
+    - path: "/etc/network/firewall/filter.v4.d/0-default.v4"
+    - path: "/etc/network/firewall/filter.v6.d/0-default.v6"
+    - path: "/etc/network/firewall/nat.v4.d/0-default.v4"
+    - path: "/etc/network/firewall/nat.v6.d/0-default.v6"
+  loop_control:
+    loop_var: file
+    label: "{{ file.path }}"
+
+- name: "Configure Firewall Scripts"
+  ansible.builtin.template:
+    src: "{{ template.file }}.j2"
+    dest: "/{{ template.file }}"
+    owner: "{{ template.owner | default('root') }}"
+    group: "{{ template.group | default('root') }}"
+    mode: "{{ template.mode | default('0600') }}"
+  with_items:
+    - file: "etc/network/firewall/env.sh"
+      mode: "0750"
+    - file: "etc/systemd/system/firewall.service"
+      mode: "0644"
+    - file: "etc/network/firewall/filter.v4.d/00-default.v4"
+    - file: "etc/network/firewall/filter.v6.d/00-default.v6"
+    - file: "etc/network/firewall/filter.v4.d/10-default.v4"
+    - file: "etc/network/firewall/filter.v6.d/10-default.v6"
+    - file: "etc/network/firewall/filter.v4.d/99-default.v4"
+    - file: "etc/network/firewall/filter.v6.d/99-default.v6"
+    - file: "etc/network/firewall/nat.v4.d/00-default.v4"
+    - file: "etc/network/firewall/nat.v6.d/00-default.v6"
+    - file: "etc/network/firewall/nat.v4.d/99-default.v4"
+    - file: "etc/network/firewall/nat.v6.d/99-default.v6"
+  loop_control:
+    loop_var: template
+    label: "{{ template.file }}"
+  notify: "Restart Firewall"
+
+- name: "Enable Firewall Service"
+  ansible.builtin.systemd:
+    name: "firewall.service"
+    state: "started"
+    daemon_reload: true
+    enabled: true

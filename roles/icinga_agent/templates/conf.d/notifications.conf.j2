@@ -1,0 +1,59 @@
+/* {{ ansible_managed }} */
+
+apply Notification "mail-host-notification" to Host {
+  import "mail-host-notification-template"
+
+  user_groups = host.vars.notification.mail.groups
+  users = host.vars.notification.mail.users
+
+  assign where host.vars.notification.mail
+}
+
+apply Notification "mail-service-notification" to Service {
+  import "mail-service-notification-template"
+  
+  user_groups = host.vars.notification.mail.groups
+  users = host.vars.notification.mail.users
+
+  assign where host.vars.notification.mail
+}
+
+/* -------------------------------------------------------------------------------- */
+/*
+apply Notification "rocketchat-host-notification" to Host {
+  import "rocketchat-host-notification-template"
+  
+  user_groups = host.vars.notification.mail.groups
+  users = host.vars.notification.mail.users
+  
+  assign where host.vars.notification.mail
+}
+
+apply Notification "rocketchat-service-notification" to Service {
+  import "rocketchat-service-notification-template"
+  
+  user_groups = host.vars.notification.mail.groups
+  users = host.vars.notification.mail.users
+  
+  assign where host.vars.notification.mail
+}
+*/
+/* -------------------------------------------------------------------------------- */
+
+apply Notification "acoby-host-notification" to Host {
+  import "acoby-host-notification-template"
+  
+  user_groups = host.vars.notification.mail.groups
+  users = host.vars.notification.mail.users
+  
+  assign where host.vars.notification.mail
+}
+
+apply Notification "acoby-service-notification" to Service {
+  import "acoby-service-notification-template"
+  
+  user_groups = host.vars.notification.mail.groups
+  users = host.vars.notification.mail.users
+  
+  assign where host.vars.notification.mail
+}

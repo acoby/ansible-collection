@@ -1,0 +1,80 @@
+---
+- name: "Ensure NTP package is installed"
+  become: true
+  ansible.builtin.package:
+    name: "{{ ntp_package }}"
+    state: present
+  tags:
+    - ntp
+
+- name: "Ensure tzdata package is installed (Linux)"
+  become: true
+  ansible.builtin.package:
+    name: "{{ ntp_tzdata_package }}"
+    state: present
+  when: "ansible_system == 'Linux'"
+  tags:
+    - ntp
+
+- name: "Set timezone"
+  become: true
+  community.general.timezone:
+    name: "{{ ntp_timezone }}"
+  notify: "restart cron"
+  tags:
+    - ntp
+
+- name: "Reread service facts"
+  become: true
+  ansible.builtin.service_facts:
+  tags:
+    - ntp
+
+- name: "Disable systemd-timesyncd if it's running but ntp is enabled"
+  become: true
+  ansible.builtin.service:
+    name: "systemd-timesyncd.service"
+    enabled: false
+    state: stopped
+  when:
+    - "ntp_enabled | bool"
+    - "'systemd-timesyncd.service' in services"
+  failed_when: false
+  tags:
+    - ntp
+
+- name: "Ensure NTP is running and enabled as configured."
+  become: true
+  ansible.builtin.service:
+    name: "{{ ntp_daemon }}"
+    state: started
+    enabled: true
+  when: "ntp_enabled | bool"
+  tags:
+    - ntp
+
+- name: "Ensure NTP is stopped and disabled as configured."
+  become: true
+  ansible.builtin.service:
+    name: "{{ ntp_daemon }}"
+    state: stopped
+    enabled: false
+  when: "not (ntp_enabled | bool)"
+  tags:
+    - ntp
+
+- name: "Generate ntp configuration file."
+  become: true
+  ansible.builtin.template:
+    src: "{{ ntp_config_file | basename }}.j2"
+    dest: "{{ ntp_config_file }}"
+    mode: "0644"
+  notify: "Restart NTP"
+  when: "ntp_manage_config | bool"
+  tags:
+    - ntp
+
+- name: "Configure Icinga for NTP"
+  ansible.builtin.include_tasks: configure_icinga.yml
+  tags:
+    - ntp

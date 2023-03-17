@@ -1,0 +1,7 @@
+---
+skip_list:
+  - role-name
+  - no-handler
+  - ignore-errors
+exclude_paths:
+  - ./molecule/

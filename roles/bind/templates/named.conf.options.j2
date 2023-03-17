@@ -1,0 +1,33 @@
+## {{ ansible_managed }}
+
+options {
+  directory "/var/cache/bind/{{ wireguard_interface }}";
+
+  forwarders {
+{% for server in network.dns.servers.ipv4 %}
+    {{ server }};
+{% endfor %}
+{% for server in network.dns.servers.ipv6 %}
+    {{ server }};
+{% endfor %}
+  };
+
+  dnssec-validation auto;
+
+  auth-nxdomain no;
+
+  listen-on {
+    {{ network.address.ipv4 }};
+  };
+
+  listen-on-v6 {
+    {{ network.address.ipv6 }};
+  };
+
+  allow-query {
+    any;
+  };
+};
+
+controls {
+};

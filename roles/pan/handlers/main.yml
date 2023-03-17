@@ -1,0 +1,20 @@
+---
+- name: "Start Wireguard"
+  become: true
+  ansible.builtin.systemd:
+    name: "wg-quick@{{ network.pan.interface }}"
+    state: "started"
+    enabled: true
+    daemon_reload: true
+
+- name: "Restart Wireguard"
+  become: true
+  ansible.builtin.systemd:
+    name: "wg-quick@{{ network.pan.interface }}"
+    state: "restarted"
+
+- name: "Restart Icinga2"
+  become: true
+  ansible.builtin.service:
+    name: "icinga2"
+    state: "restarted"

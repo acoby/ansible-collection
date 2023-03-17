@@ -1,0 +1,7 @@
+set smtp-use-starttls
+set ssl-verify=ignore
+set smtp=smtp://{{ inventory.mail.host }}:{{ inventory.mail.port }}
+set smtp-auth=login
+set smtp-auth-user={{ inventory.mail.username }}
+set smtp-auth-password={{ inventory.mail.password }}
+set from="{{ inventory.mail.from }} ({{ inventory.mail.from }})"

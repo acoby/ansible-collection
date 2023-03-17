@@ -1,0 +1,7 @@
+---
+- name: "Restart Firewall"
+  become: true
+  ansible.builtin.systemd:
+    name: "firewall.service"
+    state: "restarted"
+    enabled: true

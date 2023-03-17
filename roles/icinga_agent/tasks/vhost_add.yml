@@ -1,0 +1,50 @@
+---
+- name: "Verify Mandatory fields"
+  ansible.builtin.assert:
+    that:
+      - "monitor_domain is defined"
+    fail_msg: "At least one value for monitoring role is not defined (monitor_domain)"
+
+- name: "Set some defaults"
+  ansible.builtin.set_fact:
+    monitor_configfilename: "{{ 'httpcheck_' + monitor_domain + '.conf' }}"
+
+- name: "Set some defaults"
+  ansible.builtin.set_fact:
+    monitor_uripath: "/"
+  when: "monitor_uripath is not defined or monitor_uripath == None"
+
+- name: "Check icinga2 install status"
+  ansible.builtin.stat:
+    path: "/etc/icinga2"
+  register: icinga_install_status
+
+- name: "Configure Icinga2 Services"
+  when:
+    - "icinga_install_status.stat.exists"
+  block:
+    - name: "Configure HTTP Service Check"
+      ansible.builtin.template:
+        src: "{{ item.src }}"
+        dest: "{{ item.dest }}"
+        owner: "{{ item.owner }}"
+        group: "{{ item.group }}"
+        mode: "{{ item.mode }}"
+      with_items:
+        - src: "{{ monitor_template | default('conf.d/httpcheck_default.conf.j2') }}"
+          dest: "/etc/icinga2/conf.d/{{ monitor_configfilename }}"
+          owner: "nagios"
+          group: "nagios"
+          mode: "0440"
+      register: icinga2template
+
+    - name: "Reload Icinga2 Service"
+      ansible.builtin.service:
+        name: icinga2
+        state: reloaded
+      when: icinga2template.changed
+
+- name: "Reset defaults"
+  ansible.builtin.set_fact:
+    monitor_configfilename:
+    monitor_uripath:

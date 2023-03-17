@@ -1,0 +1,181 @@
+/* {{ ansible_managed }} */
+
+apply Service "ping4" {
+  import "generic-service"
+
+  check_command = "ping4"
+
+  assign where host.address
+}
+
+apply Service "ping6" {
+  import "generic-service"
+
+  check_command = "ping6"
+
+  assign where host.address6
+}
+
+{% if inventory.monitoring is not defined or inventory.monitoring.master is not defined %}
+apply Service "apt" {
+  import "generic-service"
+
+  check_command = "apt"
+  
+  vars.apt_only_critical = "1"
+
+  assign where host.name == "{{ inventory_hostname }}" && host.vars.os.contains("debian")
+}
+
+{% if backup is defined %}
+apply Service "borgbackup-key-exchange" {
+  import "generic-service"
+
+  check_command = "file_age"
+  
+  vars.file_age_file = "/etc/borgbackup"
+  vars.file_age_warning_time = 90000s
+  vars.file_age_critical_time = 180000s
+
+  assign where host.name == "{{ inventory_hostname }}" && host.vars.os.contains("debian")
+}
+
+{% endif %}
+apply Service "cpu" {
+  import "generic-service"
+
+  check_command = "cpu"
+
+  assign where host.name == "{{ inventory_hostname }}"
+}
+
+apply Service for (disk => config in host.vars.disks) {
+  import "generic-service"
+
+  check_command = "disk"
+
+  vars += config
+
+  assign where host.name == "{{ inventory_hostname }}"
+}
+
+apply Service for (http_vhost => config in host.vars.http_vhosts) {
+  import "generic-service"
+
+  check_command = "http"
+
+  vars += config
+
+  assign where host.name == "{{ inventory_hostname }}"
+}
+
+apply Service "icinga" {
+  import "generic-service"
+
+  check_command = "icinga"
+
+  assign where host.name == "{{ inventory_hostname }}"
+}
+
+apply Service "iptables" {
+  import "generic-service"
+
+  check_command = "check_iptables"
+
+  assign where host.name == "{{ inventory_hostname }}" && host.vars.os.contains("debian") && host.vars.firewall_enabled == "true"
+}
+
+apply Service "kernel info" {
+  import "generic-service"
+
+  check_command = "check_running_kernel"
+
+  assign where host.name == "{{ inventory_hostname }}" && host.vars.os.contains("debian")
+}
+
+apply Service "load" {
+  import "generic-service"
+
+  check_command = "load"
+
+  assign where host.name == "{{ inventory_hostname }}"
+}
+
+{% if (inventory_hostname in groups['service_docker_mailcow'] ) %}
+apply Service for (mail_smtp => config in host.vars.mail_smtp) {
+  import "generic-service"
+
+  check_command = "ssmtp"
+  
+  vars += config
+  assign where host.name == "{{ inventory_hostname }}" && host.vars.mail == "true"
+}
+
+apply Service for (mail_imap => config in host.vars.mail_imap) {
+  import "generic-service"
+
+  check_command = "simap"
+  
+  vars += config
+  assign where host.name == "{{ inventory_hostname }}" && host.vars.mail == "true"
+}
+
+apply Service for (mail_pop3 => config in host.vars.mail_pop3) {
+  import "generic-service"
+
+  check_command = "spop"
+  
+  vars += config
+  assign where host.name == "{{ inventory_hostname }}" && host.vars.mail == "true"
+}
+
+{% endif %}
+apply Service "mem" {
+  import "generic-service"
+
+  check_command = "memory"
+
+  assign where host.name == "{{ inventory_hostname }}"
+}
+
+apply Service "network traffic" {
+  import "generic-service"
+
+  check_command = "check_eth"
+
+  assign where host.name == "{{ inventory_hostname }}"
+}
+
+apply Service "procs" {
+  import "generic-service"
+
+  check_command = "procs"
+
+  assign where host.name == "{{ inventory_hostname }}"
+}
+
+apply Service "ssh" {
+  import "generic-service"
+
+  check_command = "ssh"
+
+  assign where (host.address || host.address6) && host.vars.os == "Linux"
+}
+
+apply Service "swap" {
+  import "generic-service"
+
+  check_command = "swap"
+
+  assign where host.name == "{{ inventory_hostname }}" && host.vars.swap == "true"
+}
+
+apply Service "users" {
+  import "generic-service"
+
+  check_command = "users"
+
+  assign where host.name == "{{ inventory_hostname }}"
+}
+
+{% endif %}

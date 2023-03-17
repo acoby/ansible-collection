@@ -1,0 +1,5 @@
+// {{ ansible_managed }}
+
+include "{{ bind_config_path }}/named.conf.options";
+include "{{ bind_config_path }}/named.conf.local";
+include "/etc/bind/named.conf.default-zones";

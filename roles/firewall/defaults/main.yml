@@ -1,0 +1,5 @@
+---
+firewall_enabled: true
+firewall_packages:
+  - "iptables"
+  - "iptables-persistent"

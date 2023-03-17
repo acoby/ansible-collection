@@ -1,0 +1,11 @@
+/* {{ ansible_managed }} */
+
+{% if inventory.monitoring is not defined or inventory.monitoring.master is not defined %}
+object CheckCommand "check_ntpq" {
+  import "plugin-check-command"
+  command = [ PluginDir + "/check_ntpq" ]
+ 
+  arguments       = {}
+}
+
+{% endif %}

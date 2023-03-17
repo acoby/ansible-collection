@@ -1,0 +1,120 @@
+---
+- name: "Create PKI folder"
+  ansible.builtin.file:
+    path: /etc/icinga2/pki
+    state: directory
+    owner: root
+    group: nagios
+    mode: 0770
+
+- name: "Run icinga2 pki new-cert for {{ inventory_hostname }}"
+  ansible.builtin.command: icinga2 pki new-cert \
+           --cn {{ inventory_hostname }} \
+           --key /etc/icinga2/pki/{{ inventory_hostname }}.key \
+           --cert /etc/icinga2/pki/{{ inventory_hostname }}.crt
+  args:
+    creates: /etc/icinga2/pki/{{ inventory_hostname }}.key
+
+- name: "Save the masters cert as trustedcert"
+  ansible.builtin.command: icinga2 pki save-cert \
+           --key /etc/icinga2/pki/{{ inventory_hostname }}.key \
+           --cert /etc/icinga2/pki/{{ inventory_hostname }}.crt \
+           --trustedcert /etc/icinga2/pki/trusted-master.crt \
+           --host {{ monitoring_master_hostname }} \
+           --port {{ monitoring_master_port }}
+  args:
+    creates: /etc/icinga2/pki/trusted-master.crt
+
+- name: "Find PKI Ticket informations from Master"
+  ansible.builtin.stat:
+    path: "/etc/icinga2/pki/.ticket"
+  register: icinga_master_ticket_stat
+
+- name: "Read PKI Ticket informations from Cache"
+  ansible.builtin.command: "cat /etc/icinga2/pki/.ticket"
+  register: icinga_master_ticket
+  changed_when: "icinga_master_ticket.rc != 0"
+  when: "icinga_master_ticket_stat.stat.exists"
+
+- name: "Remove API definition, when Ticket must be newly created"
+  ansible.builtin.file:
+    path: "/etc/icinga2/features-enabled/api.conf"
+    state: absent
+  when: "not icinga_master_ticket_stat.stat.exists"
+
+- name: "Create PKI ticket on Master"
+  ansible.builtin.command: "docker-compose exec -T icinga2 icinga2 pki ticket --cn {{ inventory_hostname }}"
+  args:
+    chdir: "/srv/docker/icinga2/{{ monitoring_master_instance }}"
+  delegate_to: "{{ monitoring_master_hostname }}"
+  changed_when: false
+  register: icinga_master_ticket
+  when: "not icinga_master_ticket_stat.stat.exists"
+
+- name: "Apply PKI ticket from Icinga2 Master to client"
+  ansible.builtin.lineinfile:
+    create: true
+    owner: "root"
+    group: "root"
+    mode: "0640"
+    dest: "/etc/icinga2/pki/.ticket"
+    regexp: "^{{ icinga_master_ticket.stdout }}"
+    line: "{{ icinga_master_ticket.stdout }}"
+  when: "not icinga_master_ticket_stat.stat.exists"
+
+- name: "Read PKI Ticket informations from Cache"
+  ansible.builtin.command: "cat /etc/icinga2/pki/.ticket"
+  register: icinga_master_ticket
+  changed_when: false
+
+- name: "Request the certificate from the Icinga2 Master Server"
+  ansible.builtin.command: icinga2 pki request \
+           --host {{ monitoring_master_hostname }} \
+           --port {{ monitoring_master_port }} \
+           --ticket {{ icinga_master_ticket.stdout }} \
+           --key /etc/icinga2/pki/{{ inventory_hostname }}.key \
+           --cert /etc/icinga2/pki/{{ inventory_hostname }}.crt \
+           --trustedcert /etc/icinga2/pki/trusted-master.crt \
+           --ca /etc/icinga2/pki/ca.key
+  args:
+    creates: /etc/icinga2/pki/ca.key
+  when: "not icinga_master_ticket_stat.stat.exists"
+
+- name: "Icinga Node setup"
+  ansible.builtin.command: icinga2 node setup \
+            --ticket {{ icinga_master_ticket.stdout }} \
+            --endpoint {{ monitoring_parent_hostname }} \
+            --zone {{ inventory_hostname }} \
+            --master_host {{ monitoring_master_hostname }},{{ monitoring_master_port }} \
+            --trustedcert /etc/icinga2/pki/trusted-master.crt \
+            --cn {{ inventory_hostname }}
+  args:
+    creates: /etc/icinga2/features-enabled/api.conf
+  when: "not icinga_master_ticket_stat.stat.exists"
+  notify: "Restart Icinga2"
+
+- name: "Reset icinga Notification back to Satellite mode"
+  ansible.builtin.file:
+    src: "/etc/icinga2/features-available/notification.conf"
+    dest: "/etc/icinga2/features-enabled/notification.conf"
+    owner: "nagios"
+    group: "nagios"
+    mode: "0640"
+    state: "link"
+  notify: "Restart Icinga2"
+  when: "not icinga_master_ticket_stat.stat.exists"
+
+- name: "Configure Icinga2 Zones"
+  ansible.builtin.template:
+    src: "{{ item.src }}"
+    dest: "{{ item.dest }}"
+    owner: "{{ item.owner | default('nagios') }}"
+    group: "{{ item.group | default('nagios') }}"
+    mode: "{{ item.mode | default('0440') }}"
+  notify: "Restart Icinga2"
+  with_items:
+    - src: "zones.conf.j2"
+      dest: "/etc/icinga2/zones.conf"
+      mode: "0640"
+    - src: "features-available/api.conf.j2"
+      dest: "/etc/icinga2/features-available/api.conf"

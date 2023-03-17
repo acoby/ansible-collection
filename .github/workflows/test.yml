@@ -16,10 +16,16 @@ jobs:
       - name: "Checkout repository"
         uses: actions/checkout@v3
 
+      - name: "Run ansible lint"
+        uses: ansible/ansible-lint-action@main
+
       - name: "Run yaml lint"
         uses: ibiqlik/action-yamllint@v3
         with:
           config_file: .yamllint
+
+      - name: "Run Molecule Test"
+        uses: gofrolist/molecule-action@v2
 
 # for more tests, see example
 # https://github.com/ansible-collections/ansible.netcommon/blob/main/.github/workflows/tests.yml

@@ -1,0 +1,46 @@
+/* {{ ansible_managed }} */
+
+/* Define Monitoring Global Templates */
+object Zone "global-templates" {
+  global = true
+}
+
+{% if inventory.monitoring is defined and inventory.monitoring.master is defined %}
+/* Define Monitoring Master Endpoint */
+object Endpoint "{{ monitoring_parent_zone_endpoint }}" {
+{% if hostvars[monitoring_parent_hostname].network.wan.ipv4 is defined and network.wan.ipv4 is defined %}
+  host = "{{ hostvars[monitoring_parent_hostname].network.wan.ipv4.address }}"
+{% elif hostvars[monitoring_parent_hostname].network.wan.ipv6 is defined and network.wan.ipv6 is defined %}
+  host = "{{ hostvars[monitoring_parent_hostname].network.wan.ipv6.address }}"
+{% else %}
+  host = "{{ hostvars[monitoring_parent_hostname].network.wan.fqdn }}"
+{% endif %}
+  port = "{{ monitoring_parent_port }}"
+}
+
+/* Define Monitoring Master Zone */
+object Zone "{{ monitoring_parent_zone_name }}" {
+  endpoints = [ "{{ monitoring_parent_zone_endpoint }}" ]
+}
+
+/* Define Monitoring Satellite Endpoint (this host) */
+object Endpoint "{{ inventory_hostname }}" {
+  host = "{{ inventory_hostname }}"
+}
+
+/* Define Monitoring Satellite Zone */
+object Zone "{{ inventory_hostname }}" {
+  endpoints = [ "{{ inventory_hostname }}" ]
+  parent = "{{ monitoring_parent_zone_name }}"
+}
+{% else %}
+/* Define Standalone Endpoint */
+object Endpoint NodeName {
+  host = NodeName
+}
+
+object Zone ZoneName {
+  endpoints = [ NodeName ]
+}
+
+{% endif %}

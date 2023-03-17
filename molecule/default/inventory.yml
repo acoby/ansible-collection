@@ -1,0 +1,20 @@
+---
+all:
+  hosts:
+    instance:
+  vars:
+    inventory:
+      root_password: "password"
+      monitoring:
+        notification:
+          acoby:
+            endpoint: "https://nobod.backend"
+            username: "username"
+            password: "password"
+      mail:
+        username: "mailuser"
+        password: "password"
+        host: "mailserver"
+        port: 25
+        recipient: "mailuser@mail.example"
+        from: "mailuser@mail.example"

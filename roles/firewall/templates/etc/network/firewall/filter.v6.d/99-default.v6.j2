@@ -1,0 +1,9 @@
+# {{ ansible_managed }}
+
+# Drop other new packets
+# -A INPUT -i {{ network.wan.interface }} -s ::/0 -m conntrack --ctstate NEW -m limit --limit 2/min -j LOG --log-prefix "fwlog: " --log-level 4
+
+# Log other new packets
+-A INPUT -s ::/0 -m limit --limit 2/min -j LOG --log-prefix "fwlog: " --log-level 4
+
+COMMIT

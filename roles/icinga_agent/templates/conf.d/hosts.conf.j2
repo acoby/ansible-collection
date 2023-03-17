@@ -1,0 +1,208 @@
+/* {{ ansible_managed }} */
+
+{% if inventory.monitoring is not defined or inventory.monitoring.master is not defined %}
+object Host "{{ inventory_hostname }}" {
+{% if ('proxmox' in groups and inventory_hostname in groups['proxmox'] ) %}
+  import "proxmox-host"
+{% elif ('gluster' in groups and inventory_hostname in groups['gluster'] ) %}
+  import "generic-host"
+{% elif ('vms_hetzner_cloud' in groups and inventory_hostname in groups['vms_hetzner_cloud'] ) %}
+  import "hetzner-vm"
+{% elif ('vms_proxmox' in groups and inventory_hostname in groups['vms_proxmox'] ) %}
+  import "proxmox-vm"
+{% else %}
+  import "acoby-machine"
+{% endif %}
+
+{% if network.wan.ipv4 is defined %}
+  address = "{{ network.wan.ipv4.address }}"
+{% endif %}
+{% if network.wan.ipv6 is defined %}
+  address6 = "{{ network.wan.ipv6.address }}"
+{% endif %}
+  
+  vars.os = "{{ infrastructure.os }}"
+  vars.type = "{{ infrastructure.type }}"
+  vars.location = "{{ infrastructure.location }}"
+
+  vars.mem_warning  = "5%"
+  vars.mem_critical = "2%"
+  vars.docker_warning  = "95"
+  vars.docker_critical = "100"
+{% if ('proxmox' in groups and inventory_hostname in groups['proxmox'] ) %}
+  vars.swap = "true"
+{% else %}
+  vars.swap = "false"
+{% endif %}
+  vars.eth_interface  = "{{ network.wan.interface }}"
+  vars.eth_warning  = "2048G"
+  vars.eth_critical = "4096G"
+
+  enable_notifications = true
+  enable_active_checks = true
+  enable_passive_checks = true
+  enable_event_handler = true
+  enable_flapping = true
+  enable_perfdata = true
+  volatile = true
+
+  icon_image = "tux.png"
+  icon_image_alt = "{{ infrastructure.os }}"
+
+  // global vars
+{% if firewall_enabled is defined and firewall_enabled | bool %}
+  vars.firewall_enabled = "true"
+{% else %}
+  vars.firewall_enabled = "false"
+{% endif %}
+
+  vars.disks["disk"] = {
+    disk_partitions = "/"
+  }
+
+{% if ('proxmox' in groups and inventory_hostname in groups['proxmox'] ) %}
+  // proxmox host
+  vars.disks["disk /srv"] = {
+    disk_partitions = "/srv/"
+  }
+  vars.http_vhosts["Proxmox Webinterface"] = {
+    http_uri = "/"
+    http_port = "8006"
+    http_ssl = true
+  }
+{% if inventory.monitoring is defined and inventory.monitoring.maintenance is defined and inventory.monitoring.maintenance.proxmox is defined %}
+  vars.pve_node = "{{ infrastructure.hostname }}"
+  vars.pve_cluster = true
+{% endif %}
+
+{% endif %}
+{% if ('gluster' in groups and inventory_hostname in groups['gluster'] ) %}
+  // Gluster services
+  vars.glusterfs = "true"
+  
+{% endif %}
+{% if ('vms_proxmox' in groups and inventory_hostname in groups['vms_proxmox'] ) %}
+  // vm host
+  vars.disks["disk /srv/docker"] = {
+    disk_partitions = "/srv/docker/"
+  }
+  vars.disks["disk /var/lib/docker"] = {
+    disk_partitions = "/var/lib/docker/"
+  }
+  
+{% endif %}
+{% if ('db' in groups and inventory_hostname in groups['db'] ) %}
+  // DB services
+  vars.mariadb = "true"
+  vars.postgresql = "true"
+  vars.mongodb = "true"
+  
+{% endif %}
+{% if (inventory_hostname in groups['service_borgbackup'] ) %}
+  // BorgBackup services
+  vars.borgbackup = "true"
+  vars.disks["disk /mnt/sshfs/storagebox"] = {
+    disk_partitions = "/mnt/sshfs/storagebox/"
+  }
+  
+{% endif %}
+{% if (inventory_hostname in groups['service_docker_reverseproxies']) %}
+  // ReverseProxy services
+  vars.reverseproxy = "true"
+{% for instanceId in services.reverseproxy_services.instances %}
+{% set instance = inventory.instances[instanceId] %}
+{% if instance.host == inventory_hostname and not instance.deleted %}
+{% for vhost_domain in instance.vhosts %}
+  vars.http_vhosts["HTTPS Check {{ vhost_domain }}"] = {
+    http_address = "{{ inventory_hostname }}"
+    http_vhost = "{{ vhost_domain }}"
+    http_uri = "{{ instance.vhosts[vhost_domain].path | default('/') }}"
+    http_ssl = "1"
+{% if instance.vhosts[vhost_domain].monitor_expect is defined %}
+    http_expect = "{{ instance.vhosts[vhost_domain].monitor_expect }}"
+{% endif %}
+  }
+  
+{% endfor %}
+{% endif %}
+{% endfor %}
+{% endif %}
+{% if (inventory_hostname in groups['service_docker_mailcow'] ) %}
+  // Mailcow services
+  vars.mail = "true"
+{% for instanceId in services.mailcow_services.instances %}
+{% set instance = inventory.instances[instanceId] %}
+  // {{ instance }}
+{% if instance.host == inventory_hostname and not instance.deleted %}
+  vars.http_vhosts["Mailcow Check {{ instance.name }} HTTPS"] = {
+    http_address = "{{ inventory_hostname }}"
+    http_vhost = "{{ instance.name }}"
+    http_uri = "/"
+    http_ssl = "1"
+  }
+  vars.mail_smtp["Mailcow Check {{ instance.name }} SMTP"] = {
+    ssmtp_address = "{{ instance.name }}"
+    ssmtp_port = "465"
+  }
+  vars.mail_imap["Mailcow Check {{ instance.name }} IMAP"] = {
+    simap_address = "{{ instance.name }}"
+    simap_port = "993"
+    simap_ssl = "1"
+  }
+  vars.mail_pop3["Mailcow Check {{ instance.name }} POP3"] = {
+    spop_address = "{{ instance.name }}"
+    spop_port = "995"
+    spop_ssl = "1"
+  }
+  
+{% endif %}
+{% endfor %}
+{% endif %}
+{% if (inventory_hostname in groups['service_pritunl'] ) %}
+  // PriTunl services
+  vars.pritunl_service = "true"
+
+{% endif %}
+{% if (inventory_hostname in groups['service_wireguard'] ) %}
+  // Wireguard services
+  vars.wireguard_service = "true"
+
+{% endif %}
+
+  // services
+{% if hostvars[inventory_hostname].services.all.instances is defined %}
+{% for instanceId in hostvars[inventory_hostname].services.all.instances %}
+{% set instance = inventory.instances[instanceId] %}
+{% if instance.host == inventory_hostname and not instance.deleted and instance.reverseproxy is defined %}
+{% for reverseproxy in instance.reverseproxy %}
+{% if instance.reverseproxy[reverseproxy].domain is defined %}
+  // service: {{ service }} - {{ instance.name }} - {{ instance.reverseproxy[reverseproxy].domain }}
+  vars.http_vhosts["HTTPS Check {{ instance.reverseproxy[reverseproxy].domain }}"] = {
+    http_address = "{{ reverseproxy }}"
+    http_vhost = "{{ instance.reverseproxy[reverseproxy].domain }}"
+    http_uri = "{{ instance.monitor_path | default('/') }}"
+{% if instance.monitor_expect is defined %}
+    http_expect = "{{ instance.monitor_expect }}"
+{% endif %}
+    http_ssl = "1"
+  }
+  
+{% endif %}
+{% endfor %}
+{% endif %}
+{% endfor %}
+{% endif %}
+
+  vars.notification["mail"] = {
+    groups = [ "icingaadmins" ]
+  }
+
+  vars.notification["rocketchat"] = {
+    groups = [ "icingaadmins" ]
+  }
+
+  vars.notification["nobod"] = {
+    groups = [ "nobod_operators" ]
+  }
+}
+{% endif %}

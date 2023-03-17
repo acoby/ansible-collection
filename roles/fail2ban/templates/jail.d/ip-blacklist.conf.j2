@@ -1,0 +1,90 @@
+[ip-blacklist]
+enabled   = true
+port      = anyport
+# banaction = iptables-allports
+action    = ip-blacklist
+filter    = ip-blacklist
+logpath   = /etc/fail2ban/ip.blacklist
+maxretry  = 0
+findtime  = 15552000
+bantime   = -1
+
+[ip-blacklist128v6]
+enabled   = true
+port      = anyport
+action    = ip-blacklist-v6[mask=128]
+filter    = ip-blacklist128
+logpath   = /etc/fail2ban/ip.blacklist
+maxretry  = 0
+findtime  = 15552000
+bantime   = -1
+
+[ip-blacklist96v6]
+enabled   = true
+port      = anyport
+action    = ip-blacklist-v6[mask=96]
+filter    = ip-blacklist96
+logpath   = /etc/fail2ban/ip.blacklist
+maxretry  = 0
+findtime  = 15552000
+bantime   = -1
+
+[ip-blacklist80v6]
+enabled   = true
+port      = anyport
+action    = ip-blacklist-v6[mask=80]
+filter    = ip-blacklist80
+logpath   = /etc/fail2ban/ip.blacklist
+maxretry  = 0
+findtime  = 15552000
+bantime   = -1
+
+[ip-blacklist64v6]
+enabled   = true
+port      = anyport
+action    = ip-blacklist-v6[mask=64]
+filter    = ip-blacklist64
+logpath   = /etc/fail2ban/ip.blacklist
+maxretry  = 0
+findtime  = 15552000
+bantime   = -1
+
+[ip-blacklist32]
+enabled   = true
+port      = anyport
+action    = ip-blacklist[mask=32]
+filter    = ip-blacklist32
+logpath   = /etc/fail2ban/ip.blacklist
+maxretry  = 0
+findtime  = 15552000
+bantime   = -1
+
+[ip-blacklist24]
+enabled   = true
+port      = anyport
+action    = ip-blacklist[mask=24]
+filter    = ip-blacklist24
+logpath   = /etc/fail2ban/ip.blacklist
+maxretry  = 0
+findtime  = 15552000
+bantime   = -1
+
+[ip-blacklist16]
+enabled   = true
+port      = anyport
+action    = ip-blacklist[mask=16]
+filter    = ip-blacklist16
+logpath   = /etc/fail2ban/ip.blacklist
+maxretry  = 0
+findtime  = 15552000
+bantime   = -1
+
+[ip-blacklist8]
+enabled   = true
+port      = anyport
+action    = ip-blacklist[mask=8]
+filter    = ip-blacklist8
+logpath   = /etc/fail2ban/ip.blacklist
+maxretry  = 0
+findtime  = 15552000
+bantime   = -1

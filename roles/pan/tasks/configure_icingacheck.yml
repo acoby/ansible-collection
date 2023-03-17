@@ -1,0 +1,56 @@
+---
+- name: "Check, if monitoring node is already configured"
+  ansible.builtin.stat:
+    path: "/etc/icinga2/.managed"
+  register: "icinga_installation"
+
+- name: "Install WireGuard Icinga Check Dependencies"
+  ansible.builtin.apt:
+    name: "{{ item }}"
+    state: "present"
+  loop:
+    - "libmonitoring-plugin-perl"
+  when: "icinga_installation.stat.exists"
+
+- name: "Install Wireguard Check"
+  ansible.builtin.copy:
+    src: "{{ file.src }}"
+    dest: "{{ file.dest }}"
+    mode: "{{ file.mode | default('0644') }}"
+    owner: "{{ file.owner | default('root') }}"
+    group: "{{ file.group | default('root') }}"
+  loop:
+    - src: "check_wireguard"
+      dest: "/usr/lib/nagios/plugins/check_wireguard"
+      mode: "0755"
+    - src: "04_nagios_wireguard"
+      dest: "/etc/sudoers.d/04_nagios_wireguard"
+      mode: "0440"
+    - src: "commands_wireguard.conf"
+      dest: "/etc/icinga2/conf.d/commands_wireguard.conf"
+      owner: "nagios"
+      group: "nagios"
+  loop_control:
+    loop_var: file
+    label: "{{ file.src }}"
+  when: "icinga_installation.stat.exists"
+
+- name: "Configure Wireguard Check Service"
+  ansible.builtin.template:
+    src: "{{ template.src }}"
+    dest: "{{ template.dest }}"
+    mode: "{{ template.mode | default('0644') }}"
+    owner: "{{ template.owner | default('nagios') }}"
+    group: "{{ template.group | default('nagios') }}"
+  loop:
+    - src: "icinga2/check_wireguard.conf.j2"
+      dest: "/etc/icinga2/conf.d/check_wireguard.conf"
+      mode: "0644"
+    - src: "icinga2/ping.j2"
+      dest: "/etc/wireguard/ping.sh"
+      mode: "0755"
+  loop_control:
+    loop_var: template
+    label: "{{ template.src }}"
+  when: "icinga_installation.stat.exists"
+  notify: "Restart Icinga2"

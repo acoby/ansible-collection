@@ -1,0 +1,40 @@
+---
+- name: "Update System"
+  ansible.builtin.apt:
+    upgrade: dist
+    update-cache: true
+
+- name: "Clean Apt Packages on System"
+  ansible.builtin.apt:
+    autoclean: true
+
+- name: "Autoremove Apt Packages on System"
+  ansible.builtin.apt:
+    autoremove: true
+
+- name: "Install common necessary Debian packages"
+  ansible.builtin.apt:
+    name: "{{ common_apt_packages }}"
+    state: "present"
+
+- name: "Install common necessary Python PIP libraries"
+  ansible.builtin.pip:
+    name: "{{ common_pip_packages }}"
+    state: "present"
+  when:
+    - "common_pip_packages | length > 0"
+
+- name: "Get current systemd default"
+  ansible.builtin.command:  # noqa command-instead-of-module
+    cmd: "systemctl get-default"
+  changed_when: false
+  failed_when: false
+  register: __systemdefault
+
+- name: "Set default to multi-user target"
+  ansible.builtin.command:  # noqa command-instead-of-module
+    cmd: "systemctl set-default multi-user.target"
+  changed_when: true
+  when:
+    - "'multi-user' not in __systemdefault.stdout"
+    - "__systemdefault.rc == 0"

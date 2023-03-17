@@ -1,0 +1,29 @@
+# {{ ansible_managed }}
+
+[INCLUDES]
+
+before = sendmail-common.conf
+
+[Definition]
+
+# bypass ban/unban for restored tickets
+norestored = 1
+
+#actionban = printf %%b "Hi,\n
+#            The IP <ip> has just been banned by Fail2Ban after <failures> attempts against <name>.\n\n
+#            Here is more information about <ip> :\n
+#            `/usr/bin/whois <ip> || echo missing whois program`\n
+#            Regards,\n
+#            Fail2Ban" | /usr/bin/s-nail -r <sender> -s "[Fail2Ban] <name>: banned <ip> from <fq-hostname>" <dest>
+
+actionban = /usr/local/sbin/fail2ban-report "BAN" "<name>" "<ip>" "<fq-hostname>" "<sender>" "<dest>"
+
+actionunban = 
+              
+[Init]
+
+# Default name of the chain
+#
+name = default
+dest = {{ inventory.mail.recipient }}
+sender = {{ inventory.mail.from }}

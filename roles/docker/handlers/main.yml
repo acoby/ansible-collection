@@ -1,0 +1,31 @@
+---
+- name: "Restart Docker"
+  become: true
+  ansible.builtin.systemd:
+    name: "docker"
+    state: "restarted"
+    enabled: true
+    daemon_reload: true
+
+- name: "Restart Podman"
+  become: true
+  ansible.builtin.service:
+    name: "podman.service"
+    state: "restarted"
+    enabled: true
+    daemon_reload: true
+
+- name: "Restart Firewall"
+  become: true
+  ansible.builtin.systemd:
+    name: "firewall.service"
+    state: "restarted"
+    enabled: true
+
+- name: "Restart Fail2Ban"
+  become: true
+  ansible.builtin.service:
+    name: "fail2ban"
+    state: "restarted"
+    enabled: true
+  failed_when: false

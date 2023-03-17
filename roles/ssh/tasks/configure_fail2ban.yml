@@ -1,0 +1,12 @@
+---
+- name: "Configure Fail2Ban for SSH"
+  ansible.builtin.template:
+    src: "fail2ban/{{ item.src }}"
+    dest: "/etc/fail2ban/{{ item.dest }}"
+    owner: "root"
+    group: "root"
+    mode: "0644"
+  with_items:
+    - src: "sshd-jail.conf.j2"
+      dest: "jail.d/sshd.conf"
+  notify: "Restart Fail2Ban"

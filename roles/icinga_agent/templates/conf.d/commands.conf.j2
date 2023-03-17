@@ -1,0 +1,508 @@
+/* {{ ansible_managed }} */
+
+object NotificationCommand "mail-host-notification" {
+  command = [ ConfigDir + "/scripts/mail-host-notification.sh" ]
+
+  arguments += {
+    "-4" = "$notification_address$"
+    "-6" = "$notification_address6$"
+    "-b" = "$notification_author$"
+    "-c" = "$notification_comment$"
+    "-d" = {
+      required = true
+      value = "$notification_date$"
+    }
+    "-f" = {
+      value = "$notification_from$"
+      description = "Set from address. Requires GNU mailutils (Debian/Ubuntu) or mailx (RHEL/SUSE)"
+    }
+    "-i" = "$notification_icingaweb2url$"
+    "-l" = {
+      required = true
+      value = "$notification_hostname$"
+    }
+    "-n" = {
+      required = true
+      value = "$notification_hostdisplayname$"
+    }
+    "-o" = {
+      required = true
+      value = "$notification_hostoutput$"
+    }
+    "-r" = {
+      required = true
+      value = "$notification_useremail$"
+    }
+    "-s" = {
+      required = true
+      value = "$notification_hoststate$"
+    }
+    "-t" = {
+      required = true
+      value = "$notification_type$"
+    }
+    "-v" = "$notification_logtosyslog$"
+  }
+
+  vars += {
+    notification_address = "$address$"
+    notification_address6 = "$address6$"
+    notification_author = "$notification.author$"
+    notification_comment = "$notification.comment$"
+    notification_type = "$notification.type$"
+    notification_date = "$icinga.long_date_time$"
+    notification_hostname = "$host.name$"
+    notification_hostdisplayname = "$host.display_name$"
+    notification_hostoutput = "$host.output$"
+    notification_hoststate = "$host.state$"
+    notification_useremail = "$user.email$"
+  }
+}
+
+object NotificationCommand "mail-service-notification" {
+  command = [ ConfigDir + "/scripts/mail-service-notification.sh" ]
+
+  arguments += {
+    "-4" = "$notification_address$"
+    "-6" = "$notification_address6$"
+    "-b" = "$notification_author$"
+    "-c" = "$notification_comment$"
+    "-d" = {
+      required = true
+      value = "$notification_date$"
+    }
+    "-e" = {
+      required = true
+      value = "$notification_servicename$"
+    }
+    "-f" = {
+      value = "$notification_from$"
+      description = "Set from address. Requires GNU mailutils (Debian/Ubuntu) or mailx (RHEL/SUSE)"
+    }
+    "-i" = "$notification_icingaweb2url$"
+    "-l" = {
+      required = true
+      value = "$notification_hostname$"
+    }
+    "-n" = {
+      required = true
+      value = "$notification_hostdisplayname$"
+    }
+    "-o" = {
+      required = true
+      value = "$notification_serviceoutput$"
+    }
+    "-r" = {
+      required = true
+      value = "$notification_useremail$"
+    }
+    "-s" = {
+      required = true
+      value = "$notification_servicestate$"
+    }
+    "-t" = {
+      required = true
+      value = "$notification_type$"
+    }
+    "-u" = {
+      required = true
+      value = "$notification_servicedisplayname$"
+    }
+    "-v" = "$notification_logtosyslog$"
+  }
+
+  vars += {
+    notification_address = "$address$"
+    notification_address6 = "$address6$"
+    notification_author = "$notification.author$"
+    notification_comment = "$notification.comment$"
+    notification_type = "$notification.type$"
+    notification_date = "$icinga.long_date_time$"
+    notification_hostname = "$host.name$"
+    notification_hostdisplayname = "$host.display_name$"
+    notification_servicename = "$service.name$"
+    notification_serviceoutput = "$service.output$"
+    notification_servicestate = "$service.state$"
+    notification_useremail = "$user.email$"
+    notification_servicedisplayname = "$service.display_name$"
+  }
+}
+
+object NotificationCommand "rocketchat-host-notification" {
+  import "plugin-notification-command"
+
+  command = [ ConfigDir + "/scripts/rocketchat-host-notification.sh" ]
+
+  env = {
+    "NOTIFICATIONTYPE" = "$notification.type$",
+    "HOSTALIAS" = "$host.display_name$",
+    "HOSTNAME" = "$host.name$",
+    "HOSTADDRESS" = "$address$",
+    "HOSTSTATE" = "$host.state$",
+    "LONGDATETIME" = "$icinga.long_date_time$",
+    "HOSTOUTPUT" = "$host.output$",
+    "NOTIFICATIONCOMMENT" = "$notification.comment$",
+    "HOSTDISPLAYNAME" = "$host.display_name$",
+  }
+}
+
+object NotificationCommand "rocketchat-service-notification" {
+  import "plugin-notification-command"
+
+  command = [ ConfigDir + "/scripts/rocketchat-service-notification.sh" ]
+
+  env = {
+    "NOTIFICATIONTYPE" = "$notification.type$",
+    "SERVICEDESC" = "$service.name$",
+    "HOSTALIAS" = "$host.display_name$",
+    "HOSTNAME" = "$host.name$",
+    "HOSTADDRESS" = "$address$",
+    "SERVICESTATE" = "$service.state$",
+    "LONGDATETIME" = "$icinga.long_date_time$",
+    "SERVICEOUTPUT" = "$service.output$",
+    "NOTIFICATIONAUTHORNAME" = "$notification.author$",
+    "NOTIFICATIONCOMMENT" = "$notification.comment$",
+    "HOSTDISPLAYNAME" = "$host.display_name$",
+    "SERVICEDISPLAYNAME" = "$service.display_name$",
+  }
+}
+
+
+object NotificationCommand "acoby-host-notification" {
+  import "plugin-notification-command"
+
+  command = [ ConfigDir + "/scripts/acoby-host-notification.sh" ]
+
+  env = {
+    "HOSTNAME" = "$host.name$",
+    "HOSTSTATE" = "$host.state$",
+    "HOSTOUTPUT" = "$host.output$",
+  }
+}
+
+object NotificationCommand "acoby-service-notification" {
+  import "plugin-notification-command"
+
+  command = [ ConfigDir + "/scripts/acoby-service-notification.sh" ]
+
+  env = {
+    "HOSTNAME" = "$host.name$",
+    "SERVICENAME" = "$service.name$"
+    "SERVICESTATE" = "$service.state$",
+    "SERVICEOUTPUT" = "$service.output$",
+  }
+}
+
+{% if inventory.monitoring is not defined or inventory.monitoring.master is not defined %}
+
+object CheckCommand "sudo_disk" {
+  import "disk"
+  command = [ "/usr/bin/sudo", PluginDir + "/check_disk" ]
+}
+
+object CheckCommand "memory" {
+  import "plugin-check-command"
+  command = [ PluginDir + "/check_memory" ]
+
+  arguments       = {
+   "-w" = {
+      value                     = "$mem_warning$"
+      description               = "Percent free/used when to warn"
+      required                  = true
+    }
+    "-c" = {
+      value                     = "$mem_critical$"
+      description               = "Percent free/used when critical"
+      required                  = true
+    }
+  }
+
+  vars.mem_warning  = "5%"
+  vars.mem_critical = "5%"
+}
+
+object CheckCommand "check_running_kernel" {
+  import "plugin-check-command"
+  command = [ PluginDir + "/check_running_kernel" ]
+ 
+  arguments       = {}
+}
+
+object CheckCommand "cpu" {
+  import "plugin-check-command"
+ 
+  command = [ PluginDir + "/check_cpu" ]
+ 
+  arguments = {
+    "-w" = {
+      value       = "$cpu_global_warning$"
+      description               = "Global Warning level in % for user/system/io-wait cpu"
+      required                  = false
+      set_if                    = "$cpu_global_warning$"
+    }
+    "-uw" = {
+      value       = "$cpu_user_warning$"
+      description               = "Warning level in % for user cpu"
+      required                  = false
+      set_if                    = "$cpu_user_warning$"
+    }
+    "-iw" = {
+      value       = "$cpu_io_wait_warning$"
+      description               = "Warning level in % for IO_wait cpu"
+      required                  = false
+      set_if                    = "$cpu_io_wait_warning$"
+    }
+    "-sw" = {
+      value       = "$cpu_system_warning$"
+      description               = "Warning level in % for system cpu"
+      required                  = false
+      set_if                    = "$cpu_system_warning$"
+    }
+    "-c" = {
+      value       = "$cpu_global_critical$"
+      description               = "Global Critical level in % for user/system/io-wait cpu"
+      required                  = false
+      set_if                    = "$cpu_global_critical$"
+    }
+    "-uc" = {
+      value       = "$cpu_user_critical$"
+      description               = "Critical level in % for user cpu"
+      required                  = false
+      set_if                    = "$cpu_user_critical$"
+    }
+    "-ic" = {
+      value       = "$cpu_io_wait_critical$"
+      description               = "Critical level in % for IO_wait cpu"
+      required                  = false
+      set_if                    = "$cpu_io_wait_critical$"
+    }
+    "-sc" = {
+      value       = "$cpu_system_critical$"
+      description               = "Critical level in % for system cpu"
+      required                  = false
+      set_if                    = "$cpu_system_critical$"
+    }
+    "-i" = {
+      value       = "$cpu_interval$"
+      description               = "Interval in seconds for iostat (default : 1)"
+      required                  = false
+      set_if                    = "$cpu_interval$"
+    }      
+    "-n" = {
+      value       = "$cpu_report$"
+      description               = "umber report for iostat (default : 3)"
+      required                  = false
+      set_if                    = "$cpu_report$"
+    } 
+  }
+ 
+  vars.cpu_global_warning       = 80
+  vars.cpu_user_warning         = 80
+  vars.cpu_io_wait_warning      = 80
+  vars.cpu_system_warning       = 80
+  vars.cpu_global_critical      = 90
+  vars.cpu_user_critical        = 90
+  vars.cpu_io_wait_critical     = 90
+  vars.cpu_system_critical      = 90
+  vars.cpu_interval             = 1
+  vars.cpu_report               = 3
+}
+
+object CheckCommand "check_eth" {
+  import "plugin-check-command"
+  command = [ "/usr/bin/sudo", PluginDir + "/check_eth" ]
+ 
+  arguments       = {
+   "-w" = {
+      value                     = "$eth_warning$"
+      description               = "Percent free/used when to warn"
+      required                  = true
+    }
+    "-c" = {
+      value                     = "$eth_critical$"
+      description               = "Percent free/used when critical"
+      required                  = true
+    }
+    "-i" = {
+      value                     = "$eth_interface$"
+      description               = "Given network interface"
+      required                  = true
+    }
+  }
+}
+
+
+object CheckCommand "check_galera_cluster" {
+  import "plugin-check-command"
+  command = [ PluginDir + "/check_galera_cluster" ]
+ 
+  arguments       = {
+   "-host" = {
+      value                     = "$galera_cluster_hostname$"
+      description               = "Hostname or IP of database server"
+      required                  = true
+    }
+    "-port" = {
+      value                     = "$galera_cluster_port$"
+      description               = "Port number where database listens to"
+      required                  = true
+    }
+    "-user" = {
+      value                     = "$galera_cluster_username$"
+      description               = "Check user for connecting to the database server."
+      required                  = true
+    }
+    "-password" = {
+      value                     = "$galera_cluster_password$"
+      description               = "Password of user to use when connecting to database server."
+      required                  = true
+    }
+    "-nodes-warn" = {
+      value                     = "$galera_cluster_warning$"
+      description               = "Turn warning when number of nodes hits this  (default 2)."
+      required                  = true
+    }
+    "-nodes-crit" = {
+      value                     = "$galera_cluster_critical$"
+      description               = "Turn critical when number of nodes hits this (default 1)."
+      required                  = true
+    }
+  }
+
+  vars.galera_cluster_hostname  = "127.0.0.1"
+  vars.galera_cluster_port  = 3306
+  vars.galera_cluster_warning = 2
+  vars.galera_cluster_critical = 1
+}
+
+object CheckCommand "check_iptables" {
+  import "plugin-check-command"
+  command = [ "/usr/bin/sudo", PluginDir + "/check_iptables" ]
+ 
+  arguments       = {}
+}
+
+object CheckCommand "check_md_stat" {
+  import "plugin-check-command"
+  command = [ PluginDir + "/check_md_stat" ]
+ 
+  arguments       = {}
+}
+
+object CheckCommand "check_temp" {
+  import "plugin-check-command"
+  command = [ PluginDir + "/check_temp" ]
+ 
+  arguments = {
+   "-w" = {
+      value                     = "$temp_warning$"
+      description               = "Exit with WARNING status if above INTEGER degrees"
+      required                  = true
+      order                     = -2
+    }
+    "-c" = {
+      value                     = "$temp_critical$"
+      description               = "Exit with CRITICAL status if above INTEGER degrees"
+      required                  = true
+      order                     = -1
+    }
+    "--sensor" = {
+      value                     = "$temp_sensor$"
+      description               = "Set what to monitor, for example CPU, SYS, PECI"
+      required                  = true
+    }
+  }
+}
+
+object CheckCommand "check_glusterfs" {
+  import "plugin-check-command"
+  command = [ PluginDir + "/check_glusterfs" ]
+ 
+  arguments       = {
+   "-w" = {
+      value                     = "$temp_warning$"
+      description               = "Exit with WARNING status if above INTEGER degrees"
+      required                  = true
+    }
+    "-c" = {
+      value                     = "$temp_critical$"
+      description               = "Exit with CRITICAL status if above INTEGER degrees"
+      required                  = true
+    }
+    "--sensor" = {
+      value                     = "$temp_sensor$"
+      description               = "Set what to monitor, for example CPU, SYS, PECI"
+      required                  = true
+    }
+  }
+}
+
+object CheckCommand "pve" {
+  import "plugin-check-command"
+
+  command = [ "/usr/bin/sudo", PluginDir + "/check_pve" ]
+
+  arguments = {
+    "-m" = {
+      value = "$pve_mode$"
+      required = true
+      description = "Check mode (cluster, version, updates, subscription, storage, cpu, memory, io_wait, vm, replication)"
+    }
+    "-n" = {
+      value = "$pve_node$"
+      description = "Node to check (necessary for all modes except cluster and version)"
+    }
+    "--name" = {
+      value = "$pve_resource_name$"
+      description = "Name of storage or vm to check"
+    }
+    "--expected-vm-status" = {
+      value = "$pve_expected_vm_status$"
+      description = "Expected status of the VM"
+    }
+    "--ignore-service" = {
+      repeat_key = true
+      value = "$pve_ignore_services$"
+      description = "Ignore services in check"
+    }
+    "--ignore-disk" = {
+      repeat_key = true
+      value = "$pve_ignore_disks$"
+      description = "Ignore disks in check"
+    }
+    "--ignore-vm-status" = {
+      set_if = "$pve_ignore_vm_status$"
+      description = "Ignore VM status in check"
+    }
+    "-w" = {
+      value = "$pve_warning$"
+      description = "Warning treshold"
+    }
+    "-c" = {
+      value = "$pve_critical$"
+      description = "Critical treshold"
+    }
+    "-M" = {
+      set_if = "$pve_tresholds_mb$"
+      description = "Unit of tresholds and values is MB"
+    }
+    "-V" = {
+      value = "$pve_min_version$"
+      description = "Minimal pve version. Everything lower than this will return CRITICAL."
+    }
+  }
+}
+
+object CheckCommand "check_nobod" {
+  import "plugin-check-command"
+  command = [ PluginDir + "/check_nobod" ]
+ 
+  arguments       = {
+   "-U" = {
+      value                     = "$nobod_host$"
+      description               = "URL of NOBOD API"
+      required                  = true
+    }
+  }
+}
+{% endif %}

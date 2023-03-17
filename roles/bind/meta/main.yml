@@ -1,0 +1,21 @@
+---
+dependencies:
+  - role: acoby.pan
+
+galaxy_info:
+  namespace: acoby
+  role_name: bind
+  author: Thoralf Rickert-Wendt
+  description: A role for all Bind system
+  company: Acoby GmbH
+  license: MIT
+  min_ansible_version: "2.12"
+  platforms:
+    - name: Debian
+      versions:
+        - bullseye
+        - buster
+  galaxy_tags:
+    - cloud
+    - development
+    - system

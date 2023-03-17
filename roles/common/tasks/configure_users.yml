@@ -1,0 +1,44 @@
+---
+- name: "Create User {{ user.username }}"
+  no_log: true
+  ansible.builtin.user:
+    name: "{{ user.username }}"
+    password: "{{ user.shadow | default(omit) }}"
+    comment: "{{ item.department | default(omit) }}"
+    shell: "/bin/bash"
+    group: users
+    groups: users
+    append: true
+
+- name: "Create Sudoers File for {{ user.username }}"
+  ansible.builtin.copy:
+    content: "{{ user.username }} ALL=(ALL) {% if user.shadow is not defined %}NOPASSWD: {% endif %}ALL"
+    dest: "/etc/sudoers.d/{{ user.username }}"
+    owner: "root"
+    group: "root"
+    mode: "0440"
+  when:
+    - "'ADMIN' in user.roles"
+
+- name: "Configure Pubkey for {{ user.username }}"
+  no_log: true
+  ansible.posix.authorized_key:
+    user: "{{ user.username }}"
+    key: "{{ user.pubkey }}"
+    state: present
+  when:
+    - "user.pubkey is defined"
+
+- name: "Configure Bash Profile for {{ user.username }}"
+  ansible.builtin.copy:
+    src: "{{ file.source }}"
+    dest: "{{ file.destination }}"
+    owner: "{{ file.owner | default(user.username) }}"
+    group: "{{ file.group | default('users') }}"
+    mode: "{{ file.mode | default('0644') }}"
+  loop:
+    - source: "bashrc"
+      destination: "/home/{{ user.username }}/.bashrc"
+  loop_control:
+    loop_var: file
+    label: "{{ file.source }}"

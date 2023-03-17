@@ -1,0 +1,28 @@
+apply Service "HTTP Check {{ monitor_domain }}" {
+  import "generic-service"
+  check_command = "http"
+
+  vars.http_vhost = "{{ monitor_domain }}"
+  vars.http_uri = "{{ monitor_uripath | default('/') }}"
+  vars.http_ssl = "1"
+{% if monitor_expect is defined %}
+  vars.http_expect = "{{ monitor_expect }}"
+{% endif %}
+
+  assign where host.name == NodeName
+}
+
+{% if (monitor_notification_group is defined and monitor_notification_group|length) or (monitor_notification_user is defined and monitor_notification_user|length) %}
+apply Notification "HTTP Check {{ monitor_domain }} Notification" to Service {
+  import "mail-service-notification-template"
+
+{% if monitor_notification_group is defined and monitor_notification_group|length %}
+  user_groups = [ "{{ monitor_notification_group }}" ]
+{% endif %}
+{% if monitor_notification_user is defined and monitor_notification_user|length %}
+  users = [ "{{ monitor_notification_user | upper }}" ]
+{% endif %}
+  
+  assign where service.name == "HTTP Check {{ monitor_domain }}"
+}
+{% endif %}

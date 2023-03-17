@@ -1,0 +1,36 @@
+/* {{ ansible_managed }} */
+
+object UserGroup "icingaadmins" {
+  display_name = "Icinga 2 Admin Group"
+}
+
+object UserGroup "acoby_operators" {
+  display_name = "Acoby Operators"
+}
+
+/*
+object User "icingaadmin" {
+  import "generic-user"
+
+  display_name = "Icinga 2 Admin"
+  groups = [ "icingaadmins" ]
+
+{% if owner.customerId in customers  %}
+  email = "{{ customers[owner.customerId].emailNotification | default('postmaster@acoby.de') }}"
+{% endif %}
+}
+*/
+
+{% for user in users %}
+{% if user.customerId == owner.customerId and 'ADMIN' in user.roles %}
+object User "{{ user.username | upper }}" {
+  import "generic-user"
+
+  display_name = "{{ user.name }}"
+  groups = [ "icingaadmins", "acoby_operators" ]
+
+  email = "{{ user.emailNotification | default(user.email) }}"
+}
+
+{% endif %}
+{% endfor %}

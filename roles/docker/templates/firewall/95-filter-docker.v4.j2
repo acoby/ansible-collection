@@ -1,0 +1,10 @@
+# {{ ansible_managed }}
+
+{% if firewall_debug is defined %}
+# Log other new packets
+-A DOCKER-USER -i {{ network.wan.interface }} -s 0.0.0.0/0 -j LOG --log-prefix "FWD-DROP: " --log-level 4
+{% endif %}
+
+# Drop other new packets
+-A DOCKER-USER -i {{ network.wan.interface }} -m conntrack --ctstate NEW,UNTRACKED -j REJECT
+-A DOCKER-USER -j RETURN

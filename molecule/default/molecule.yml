@@ -5,9 +5,21 @@ driver:
   name: docker
 platforms:
   - name: instance
-    image: quay.io/centos/centos:stream8
+    image: "docker.io/geerlingguy/docker-debian11-ansible"
     pre_build_image: true
+    privileged: true
+    command: "/lib/systemd/systemd"
+    volumes:
+      - "/sys/fs/cgroup:/sys/fs/cgroup:ro"
+    tmpfs:
+      - "/run"
+      - "/tmp"
 provisioner:
   name: ansible
+  lint:
+    name: ansible-lint
+  inventory:
+    links:
+      hosts: inventory.yml
 verifier:
   name: ansible

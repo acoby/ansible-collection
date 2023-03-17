@@ -1,0 +1,38 @@
+/* {{ ansible_managed }} */
+
+{% if inventory.monitoring is not defined or inventory.monitoring.master is not defined %}
+
+object CheckCommand "check_dockercompose" {
+  import "plugin-check-command"
+  command = [ "/usr/bin/sudo", PluginDir + "/check_dockercompose" ]
+  arguments = {
+    "-f" = {
+      required = true
+      value = "$servicedefinition$"
+    }
+    "-e" = "$exclude$"
+    "-s" = "$checkstatus$"
+  }
+}
+
+object CheckCommand "check_docker" {
+  import "plugin-check-command"
+  command = [ "/usr/bin/sudo", PluginDir + "/check_docker" ]
+ 
+  arguments       = {
+   "-w" = {
+      value                     = "$docker_warning$"
+      description               = "Percent free/used when to warn"
+      required                  = true
+    }
+    "-c" = {
+      value                     = "$docker_critical$"
+      description               = "Percent free/used when critical"
+      required                  = true
+    }
+  }
+
+  vars.docker_warning  = "80"
+  vars.docker_critical = "90"
+}
+{% endif %}

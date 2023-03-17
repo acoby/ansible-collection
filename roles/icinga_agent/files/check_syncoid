@@ -1,0 +1,161 @@
+#!/bin/bash
+
+hostname=""
+zfs_root_partition=""
+zfs_list_flag=""
+
+any_not_synced=false
+any_critical=false
+any_warning=false
+any_multiple_snapshots=false
+
+critical_time=30
+warning_time=25
+recursiv=false
+
+# Nagios check to check that syncoid has been run and copies out the latest snapshots
+
+# -r      traverse  over a dataset recursively
+# -z <s>  sets s ZFS dataset to check
+# -w <n>  sets n to minutes before it is warning
+# -c <n>  sets n to minutes before it is critical
+# -h <s>  sets s as the hostname in the syncoid snapshot name
+#         an example of a snapshot name is
+#           syncoid_spike_2020-10-27:12:02:15
+#           ^^^^^^^ script uses filter snapshots
+#                   ^^^^^ host name
+#                         ^^^^^^^^^^^^^^^^^^^ Time we use to compare
+
+#         It is important that all the systems are on the same timezone since
+#         syncoid will use timezone from computer syncing(the backupserver) and
+#         the this check will run on the server being backed up. This script
+#         uses the date command which uses local time zone to to get a
+#         correct result.
+
+while getopts "w:c:rh:z:" opt; do
+  case $opt in
+    r)
+      recursiv="true"
+      ;;
+    c)
+      critical_time=$OPTARG
+      ;;
+    w)
+      warning_time=$OPTARG
+      ;;
+    h)
+      hostname=$OPTARG
+      ;;
+    z)
+      zfs_root_partition=$OPTARG
+      ;;
+    *)
+      echo "Invalid option"
+      ;;
+  esac
+done
+
+checkExecutableCommand () {
+  if ! command -v $1&> /dev/null
+  then
+    echo "$1 command could not be found"
+    exit 2
+  fi
+}
+
+checkExecutableCommand zfs
+checkExecutableCommand bc
+checkExecutableCommand grep
+checkExecutableCommand awk
+checkExecutableCommand sed
+
+if [[ "$hostname" = "" ]]; then
+  echo "Host name is required, specify it with -h";
+  exit 2
+fi
+if [[ "$zfs_root_partition" = "" ]]; then
+  echo "ZFS root is required, specify it with -z";
+  exit 2
+fi
+
+if ! zfs list $zfs_root_partition &> /dev/null; then
+  echo "Could not find dataset $zfs_root_partition";
+  exit 2
+fi
+
+if [[ "$recursiv" = "true" ]]; then
+  zfs_list_flag="-r ";
+fi
+
+# Create temporaryfile to store the full ZFS list. It for performance.
+tmpfile=$(mktemp /tmp/check-syncoid.XXXXXX)
+zfs list -t all > $tmpfile
+for zfs_partition in $(zfs list $zfs_list_flag $zfs_root_partition -H -o name); do
+  echo -n "scanning $zfs_partition ... "
+  synced=true
+
+  previous_snapshot=$(cat $tmpfile | grep -E "${zfs_partition}@syncoid_$hostname" | awk '{print$1;}' | \
+           awk -F"${zfs_partition}@syncoid_${hostname}_" '{print$2;}' | tail -1 | sed 's/./T/11' | sed 's/-GMT00:00/GMT/')
+  syncoid_snapshots=$(cat $tmpfile | grep -Ec "${zfs_partition}@syncoid_$hostname")
+
+  # There should always be one syncoid snapshot since this is how syncoid remembers state.
+  # When syncoid is running it will create a new snapshot and transfer the data between
+  # the previous syncoid snapshot and the new one. This might take some time so 2 snapshots
+  # are okey. When it's more then 2 snapshots somethings off. When you have two different datasets
+  # with the same name. This happens if you create a dataset, syncs it, delete dataset, recreate
+  # a dataset with the same name. When is three snapshots it is critical.
+  if [[ $syncoid_snapshots -gt 2 ]]; then
+    echo -e "FOUND MULTIPLE($syncoid_snapshots) syncoid snapshots"
+    any_multiple_snapshots=true
+    continue
+  fi
+
+  if [ "${previous_snapshot}" == "" ]; then
+    echo -n "NOT SYNCED "
+    # If a dataset is newly created it will of course not be synced. We will use the
+    # time stamp from when the dataset was created as "previous synced", so it it takes more
+    # than warning time before it synced first time it is a warning.
+    previous_snapshot=$(zfs get -p creation $zfs_partition -H | awk '{ print $3; }')
+    synced=false
+    any_not_synced=true
+  else
+    previous_snapshot=$(date -d "${previous_snapshot}" +%s)
+  fi;
+
+  date_current=$(date +%s)
+  diff_time=$(echo "(${date_current}-${previous_snapshot})/60"|bc)
+
+  if [ $diff_time -gt $critical_time ]; then
+    echo -n "CRITICAL "
+    any_critical=true
+  elif [ $diff_time -gt $warning_time ]; then
+    echo -n "WARNING "
+    any_warning=true
+  fi;
+
+  if [ $synced = "true" ]; then
+    echo "it was synced ${diff_time}minutes ago"
+  else
+    echo "it was created ${diff_time}minutes ago"
+  fi;
+done
+rm "$tmpfile"
+
+if [[ "$any_multiple_snapshots" = "true" ]]; then
+  echo "Some datasets has multiple syncoid images, this happens when syncoid fails to sync the snapshots because the dataset exist on both servers without any common snapshots"
+fi
+if [[ "$any_not_synced" = "true" ]]; then
+  echo "Some datasets aren't synced"
+fi
+if [[ "$any_critical" = "true" ]]; then
+  echo "Some datasets aren't synced within critical time($critical_time)"
+fi
+if [[ "$any_warning" = "true" ]]; then
+  echo "Some datasets aren't synced within warning time($warning_time)"
+fi
+
+if [[ "$any_critical" = "true" || "$any_multiple_snapshots" = "true" ]]; then
+  exit 2
+elif [[ "$any_warning" = "true" ]]; then
+  exit 1
+fi
