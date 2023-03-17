@@ -1,0 +1,26 @@
+---
+- name: "Prepare Collection"
+  hosts: "localhost"
+  tasks:
+    - name: "Define Ansible Collection"
+      ansible.builtin.set_fact:
+        collection_namespace: "acoby"
+        collection_name: "collection"
+        collection_path: "{{ lookup('ansible.builtin.env', 'ANSIBLE_COLLECTIONS_PATH') | split(':') | first }}"
+
+    - name: "Debug current collections path"
+      ansible.builtin.debug:
+        msg: "{{ collection_path }}"
+
+    - name: "Remove possible old collection structure"
+      ansible.builtin.file:
+        path: "{{ collection_path }}/ansible_collections/{{ collection_namespace }}"
+        state: "absent"
+
+    - name: "Create folder structure for collection"
+      ansible.builtin.file:
+        path: "{{ collection_path }}/ansible_collections/{{ collection_namespace }}"
+        state: "directory"
+
+    - name: "Create folder structure for collection"
+      ansible.builtin.command: "cp -r ../../../ansible-collection {{ collection_path }}/ansible_collections/{{ collection_namespace }}/{{ collection_name }}"

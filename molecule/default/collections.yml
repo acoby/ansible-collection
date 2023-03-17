@@ -1,0 +1,10 @@
+#
+# all dependency roles
+#
+# ansible-galaxy install --force -r requirements.yml
+#
+---
+collections:
+  - name: https://$GITHUB_TOKEN@github.com/acoby/ansible-collection.git
+    type: git 
+    version: main

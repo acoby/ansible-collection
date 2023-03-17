@@ -2,7 +2,7 @@
 
 {% if inventory is defined and inventory.mail is defined %}
 set v15-compat
-set smtp=smtp://{{ inventory.mail.username | acoby.collection.my_urlencode }}:{{ inventory.mail.password | acoby.collection.my_urlencode }}@{{ inventory.mail.host }}:{{ inventory.mail.port }}
+set smtp=smtp://{{ inventory.mail.username | acoby.collection.urlencode }}:{{ inventory.mail.password | acoby.collection.urlencode }}@{{ inventory.mail.host }}:{{ inventory.mail.port }}
 set smtp-auth=plain
 set from="{{ inventory.mail.from }} ({{ inventory.mail.from }})"
 {% endif %}
