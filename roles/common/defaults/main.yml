@@ -28,4 +28,3 @@ mta_packages:
   - "msmtp-mta"
 reboot_when_required: false
 zfs_enabled: false
-

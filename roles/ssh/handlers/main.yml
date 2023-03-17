@@ -4,7 +4,7 @@
   ansible.builtin.service:
     name: "sshd"
     state: "restarted"
-  ignore_errors: "inventory.id is not defined"
+  ignore_errors: "{{ inventory.id is not defined }}"
 
 - name: "Restart Fail2Ban"
   become: true
@@ -12,4 +12,4 @@
     name: "fail2ban"
     state: "restarted"
     enabled: true
-  ignore_errors: "inventory.id is not defined"
+  ignore_errors: "{{ inventory.id is not defined }}"

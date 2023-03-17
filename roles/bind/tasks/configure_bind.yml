@@ -109,7 +109,7 @@
     state: "started"
     daemon_reload: true
     enabled: true
-  ignore_errors: "inventory.id is not defined"
+  ignore_errors: "{{ inventory.id is not defined }}"
   register: bind_service
   tags:
     - bind
@@ -118,7 +118,7 @@
   ansible.builtin.systemd:
     name: "named_{{ wireguard_interface }}"
     state: "restarted"
-  ignore_errors: "inventory.id is not defined"
+  ignore_errors: "{{ inventory.id is not defined }}"
   when:
     - "_bind_templates.changed"
     - "not bind_service.changed"

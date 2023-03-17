@@ -5,4 +5,4 @@
     name: "icinga2"
     state: "restarted"
     enabled: true
-  ignore_errors: "inventory.id is not defined"
+  ignore_errors: "{{ inventory.id is not defined }}"

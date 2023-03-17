@@ -39,7 +39,7 @@
   when:
     - "ntp_enabled | bool"
     - "'systemd-timesyncd.service' in services"
-  ignore_errors: "inventory.id is not defined"
+  ignore_errors: "{{ inventory.id is not defined }}"
   tags:
     - ntp
 
@@ -49,7 +49,7 @@
     name: "{{ ntp_daemon }}"
     state: started
     enabled: true
-  ignore_errors: "inventory.id is not defined"
+  ignore_errors: "{{ inventory.id is not defined }}"
   when: "ntp_enabled | bool"
   tags:
     - ntp
@@ -60,7 +60,7 @@
     name: "{{ ntp_daemon }}"
     state: stopped
     enabled: false
-  ignore_errors: "inventory.id is not defined"
+  ignore_errors: "{{ inventory.id is not defined }}"
   when: "not (ntp_enabled | bool)"
   tags:
     - ntp

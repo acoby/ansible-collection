@@ -1,5 +1,9 @@
 # Change Log
 
+## v1.2.1
+
+- fixed a lint issue with ignore_errors
+
 ## v1.2.0
 
 - added GlusterFS, NFS, CA roles

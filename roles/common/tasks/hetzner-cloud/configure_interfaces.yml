@@ -29,7 +29,7 @@
   loop_control:
     loop_var: template
     label: "{{ template.src }}"
-  ignore_errors: "inventory.id is not defined"
+  ignore_errors: "{{ inventory.id is not defined }}"
   register: _configure_interfaces
 
 - name: "Reboot necessary"

@@ -65,7 +65,7 @@
   notify: "Restart Firewall"
 
 - name: "Enable Firewall Service"
-  ignore_errors: "inventory.id is not defined"
+  ignore_errors: "{{ inventory.id is not defined }}"
   ansible.builtin.systemd:
     name: "firewall.service"
     state: "started"

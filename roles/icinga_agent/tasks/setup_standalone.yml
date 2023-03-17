@@ -22,4 +22,4 @@
     name: "icinga2"
     state: "started"
     enabled: true
-  ignore_errors: "inventory.id is not defined"
+  ignore_errors: "{{ inventory.id is not defined }}"
