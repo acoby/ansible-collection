@@ -11,7 +11,7 @@ Documentation for the collection.
 
 ## Filters
 
-- my_urlencode
+- urlencode
 - quote_wrap
 - service_ipv4_address
 - service_ipv6_address

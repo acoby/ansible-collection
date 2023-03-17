@@ -11,7 +11,7 @@ Here you can find some documentations of available modules and filters
 
 ## Filters
 
-- my_urlencode
+- urlencode
 - quote_wrap
 - service_ipv4_address
 - service_ipv6_address
