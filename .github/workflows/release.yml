@@ -1,0 +1,31 @@
+name: "Build & Test & Release"
+
+on:
+  push:
+    tags:
+      - "v*"
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: "Checkout repository"
+      uses: actions/checkout@v3
+
+    - name: "Create Changelog"
+      uses: scottbrenner/generate-changelog-action@master
+      id: Changelog
+
+    - name: "Create Release"
+      uses: actions/create-release@latest
+      id: create_release
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        tag_name: ${{ github.ref }}
+        release_name: ${{ github.ref }}
+        body: |
+            ${{ steps.Changelog.outputs.changelog }}
+        draft: false
+        prerelease: false
