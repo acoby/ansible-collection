@@ -101,7 +101,7 @@ apply Service "load" {
   assign where host.name == "{{ inventory_hostname }}"
 }
 
-{% if (inventory_hostname in groups['service_docker_mailcow'] ) %}
+{% if 'service_docker_mailcow' in group_names and inventory_hostname in groups['service_docker_mailcow'] %}
 apply Service for (mail_smtp => config in host.vars.mail_smtp) {
   import "generic-service"
 

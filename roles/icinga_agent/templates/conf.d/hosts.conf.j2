@@ -98,7 +98,7 @@ object Host "{{ inventory_hostname }}" {
   vars.mongodb = "true"
   
 {% endif %}
-{% if (inventory_hostname in groups['service_borgbackup'] ) %}
+{% if 'service_borgbackup' in groups and inventory_hostname in groups['service_borgbackup'] %}
   // BorgBackup services
   vars.borgbackup = "true"
   vars.disks["disk /mnt/sshfs/storagebox"] = {
@@ -106,7 +106,7 @@ object Host "{{ inventory_hostname }}" {
   }
   
 {% endif %}
-{% if (inventory_hostname in groups['service_docker_reverseproxies']) %}
+{% if 'service_docker_reverseproxies' in groups and inventory_hostname in groups['service_docker_reverseproxies'] %}
   // ReverseProxy services
   vars.reverseproxy = "true"
 {% for instanceId in services.reverseproxy_services.instances %}
@@ -127,7 +127,7 @@ object Host "{{ inventory_hostname }}" {
 {% endif %}
 {% endfor %}
 {% endif %}
-{% if (inventory_hostname in groups['service_docker_mailcow'] ) %}
+{% if 'service_docker_mailcow' in groups and inventory_hostname in groups['service_docker_mailcow'] %}
   // Mailcow services
   vars.mail = "true"
 {% for instanceId in services.mailcow_services.instances %}
@@ -158,19 +158,19 @@ object Host "{{ inventory_hostname }}" {
 {% endif %}
 {% endfor %}
 {% endif %}
-{% if (inventory_hostname in groups['service_pritunl'] ) %}
+{% if 'service_pritunl' in groups and inventory_hostname in groups['service_pritunl'] %}
   // PriTunl services
   vars.pritunl_service = "true"
 
 {% endif %}
-{% if (inventory_hostname in groups['service_wireguard'] ) %}
+{% if 'service_wireguard' in groups and inventory_hostname in groups['service_wireguard'] %}
   // Wireguard services
   vars.wireguard_service = "true"
 
 {% endif %}
 
   // services
-{% if hostvars[inventory_hostname].services.all.instances is defined %}
+{% if hostvars[inventory_hostname].services is defined and hostvars[inventory_hostname].services.all is defined and hostvars[inventory_hostname].services.all.instances is defined %}
 {% for instanceId in hostvars[inventory_hostname].services.all.instances %}
 {% set instance = inventory.instances[instanceId] %}
 {% if instance.host == inventory_hostname and not instance.deleted and instance.reverseproxy is defined %}

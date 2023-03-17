@@ -8,4 +8,4 @@
   tasks:
     - name: "Assign role"
       ansible.builtin.include_role:
-        name: "acoby.collection.firewall"
+        name: "acoby.collection.icinga_agent"

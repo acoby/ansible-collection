@@ -4,6 +4,17 @@ all:
     instance:
       hardware:
         type: "virtual"
+      infrastructure:
+        os: "debian-11"
+        hostType: "vm"
+        type: "test"
+        location: "home"
+        hostname: "instance"
+        parent: "master"
+        software:
+          sandbox: "docker-ce"
+      owner:
+        customerId: "one"
       network:
         wan:
           interface: "eth0"
@@ -29,6 +40,13 @@ all:
             public_key: "publickey"
   vars:
     acoby_pan_port: 10000
+    customers:
+      one:
+        name: "Name"
+        company: "Company"
+        country: "DE"
+        contact: "Contact"
+        email: "mailser@mail.example"
     inventory_user: "ansible"
     inventory_pass: "password"
     inventory:
@@ -45,6 +63,7 @@ all:
         host: "mailserver"
         port: 25
         recipient: "mailuser@mail.example"
+        name: "My Robot"
         from: "mailuser@mail.example"
       network:
         pan: "pan.domain.tld"
@@ -64,5 +83,6 @@ all:
       - username: "ansible"
         roles: "REPORT"
         department: "IT"
+        customerId: "one"
         pubkey: "none"
         shadow: "x"

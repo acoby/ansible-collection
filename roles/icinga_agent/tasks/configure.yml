@@ -110,6 +110,14 @@
   when:
     - "file.target in group_names"
 
+- name: "Create SystemD Config Dir"
+  ansible.builtin.file:
+    path: "/etc/systemd/system/icinga2.service.d"
+    state: "directory"
+    mode: "0755"
+    owner: "root"
+    group: "root"
+
 - name: "Override System Limits for Icinga"
   ansible.builtin.template:
     src: "systemctl/limits.conf.j2"
