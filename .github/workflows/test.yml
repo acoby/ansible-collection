@@ -1,0 +1,25 @@
+---
+name: "Lint & Test"
+
+on:
+  push:
+  pull_request:
+
+  # Allows you to run this workflow manually from the Actions tab
+  workflow_dispatch:
+
+jobs:
+  molecule:
+    name: "Run Lint and Molecule Tests"
+    runs-on: ubuntu-latest
+    steps:
+      - name: "Checkout repository"
+        uses: actions/checkout@v3
+
+      - name: "Run yaml lint"
+        uses: ibiqlik/action-yamllint@v3
+        with:
+          config_file: .yamllint
+
+# for more tests, see example
+# https://github.com/ansible-collections/ansible.netcommon/blob/main/.github/workflows/tests.yml

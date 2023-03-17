@@ -1,0 +1,10 @@
+---
+extends: default
+
+rules:
+  line-length:
+    max: 1000
+    level: warning
+
+ignore: |
+  .github/workflows/test.yml
