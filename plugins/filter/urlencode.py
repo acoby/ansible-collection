@@ -8,4 +8,4 @@ def urlencode_filter(arg):
 
 class FilterModule(object):
   def filters(self):
-    return {'my_urlencode': urlencode_filter}
+    return {'urlencode': urlencode_filter}
