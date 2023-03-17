@@ -4,34 +4,9 @@
   tasks:
     - name: "Define Ansible Collection"
       ansible.builtin.set_fact:
-        repository_name: "ansible-collection"
         collection_namespace: "acoby"
         collection_name: "collection"
         collection_path: "{{ lookup('ansible.builtin.env', 'ANSIBLE_COLLECTIONS_PATH') | split(':') | first }}"
-
-    - name: "list dir"
-      ansible.builtin.command: "ls -al"
-      register: __list_current_dir
-
-    - name: "Debug list"
-      ansible.builtin.debug:
-        msg: "{{ __list_current_dir }}"
-
-    - name: "list upper dir"
-      ansible.builtin.command: "ls -al ../../"
-      register: __list_current_dir
-
-    - name: "Debug list"
-      ansible.builtin.debug:
-        msg: "{{ __list_current_dir }}"
-
-    - name: "list pwd"
-      ansible.builtin.command: "pwd"
-      register: __list_current_dir
-
-    - name: "Debug pwd"
-      ansible.builtin.debug:
-        msg: "{{ __list_current_dir }}"
 
     - name: "Debug current collections path"
       ansible.builtin.debug:
@@ -44,9 +19,18 @@
 
     - name: "Create folder structure for collection"
       ansible.builtin.file:
-        path: "{{ collection_path }}/ansible_collections/{{ collection_namespace }}"
+        path: "{{ collection_path }}/ansible_collections/{{ collection_namespace }}/{{ collection_name }}"
         state: "directory"
 
     - name: "Create folder structure for collection"
-      ansible.builtin.command: "cp -r ../../../{{ repository_name }} {{ collection_path }}/ansible_collections/{{ collection_namespace }}/{{ collection_name }}"
+      ansible.builtin.command: "cp -r ../../{{ item }} {{ collection_path }}/ansible_collections/{{ collection_namespace }}/{{ collection_name }}/"
+      loop:
+        - "galaxy.yml"
+        - "docs"
+        - "meta"
+        - "plugins"
+        - "roles"
+        - "CHANGELOG.md"
+        - "README.md"
+        - ".ansible-lint"
       ignore_errors: true
