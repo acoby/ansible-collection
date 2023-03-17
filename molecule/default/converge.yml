@@ -8,4 +8,4 @@
   tasks:
     - name: "Assign role"
       ansible.builtin.include_role:
-        name: "acoby.common"
+        name: "ansible-collection"
