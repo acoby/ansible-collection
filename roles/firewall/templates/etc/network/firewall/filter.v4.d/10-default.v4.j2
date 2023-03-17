@@ -16,7 +16,7 @@
 
 
 # Internal Network
-{% for host in groups['all']|sort %}
+{% for host in groups['all'] | sort %}
 {% if hostvars[host].network.wan.ipv4 is defined %}
 -A acoby-wan -i {{ network.wan.interface }} -s {{ hostvars[host].network.wan.ipv4.address }}/32 -p tcp -m tcp --dport {{ acoby_ssh_port }} -j ACCEPT -m comment --comment "allow ssh traffic from {{ host }} via WAN"
 -A acoby-wan -i {{ network.wan.interface }} -s {{ hostvars[host].network.wan.ipv4.address }}/32 -p icmp -j ACCEPT -m comment --comment "allow icmp traffic from {{ host }} via WAN"
@@ -24,7 +24,7 @@
 {% endfor %}
 
 {% if 'monitoring' in groups %}
-{% for host in groups['monitoring']|sort %}
+{% for host in groups['monitoring'] | sort %}
 {% if hostvars[host].network.wan.ipv4 is defined %}
 -A acoby-wan -i {{ network.wan.interface }} -s {{ hostvars[host].network.wan.ipv4.address }}/32 -p tcp -m tcp --dport 5665 -j ACCEPT -m comment --comment "allow monitoring traffic from {{ host }} via WAN"
 {% endif %}
@@ -32,7 +32,7 @@
 {% endif %}
 
 {% if network.wan.ipv4 is defined %}
-{% for ip in network.wan.ipv4.dns|sort %}
+{% for ip in network.wan.ipv4.dns | sort %}
 -A acoby-wan -i {{ network.wan.interface }} -s {{ ip }}/32 -p udp -m udp --dport 53 -j ACCEPT -m comment --comment "allow dns traffic via WAN"
 {% endfor %}
 {% endif %}

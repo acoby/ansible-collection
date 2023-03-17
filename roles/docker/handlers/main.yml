@@ -6,6 +6,7 @@
     state: "restarted"
     enabled: true
     daemon_reload: true
+  ignore_errors: true
 
 - name: "Restart Podman"
   become: true
@@ -14,6 +15,7 @@
     state: "restarted"
     enabled: true
     daemon_reload: true
+  ignore_errors: true
 
 - name: "Restart Firewall"
   become: true
@@ -21,6 +23,7 @@
     name: "firewall.service"
     state: "restarted"
     enabled: true
+  ignore_errors: true
 
 - name: "Restart Fail2Ban"
   become: true
@@ -28,4 +31,4 @@
     name: "fail2ban"
     state: "restarted"
     enabled: true
-  failed_when: false
+  ignore_errors: true

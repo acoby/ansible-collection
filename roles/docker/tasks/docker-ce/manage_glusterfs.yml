@@ -55,7 +55,6 @@
       ansible.builtin.command: "docker plugin install --alias gv2 trajano/glusterfs-volume-plugin --grant-all-permissions --disable"
       register: docker_plugin_gv2_install
       changed_when: "'Installed' in docker_plugin_gv2_install.stdout"
-      failed_when: false
       ignore_errors: true
 
     - name: "Configure GlusterFS Docker Plugin"

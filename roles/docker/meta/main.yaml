@@ -1,6 +1,6 @@
 ---
 dependencies:
-  - role: acoby.pan
+  - role: acoby.collection.pan
 
 galaxy_info:
   namespace: acoby

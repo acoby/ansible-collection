@@ -4,4 +4,4 @@
   ansible.builtin.service:
     name: "systemd-journald"
     state: "restarted"
-  failed_when: false
+  ignore_errors: true

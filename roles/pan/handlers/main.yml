@@ -6,15 +6,18 @@
     state: "started"
     enabled: true
     daemon_reload: true
+  ignore_errors: true
 
 - name: "Restart Wireguard"
   become: true
   ansible.builtin.systemd:
     name: "wg-quick@{{ network.pan.interface }}"
     state: "restarted"
+  ignore_errors: true
 
 - name: "Restart Icinga2"
   become: true
   ansible.builtin.service:
     name: "icinga2"
     state: "restarted"
+  ignore_errors: true

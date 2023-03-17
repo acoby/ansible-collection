@@ -65,6 +65,7 @@
   notify: "Restart Firewall"
 
 - name: "Enable Firewall Service"
+  ignore_errors: true
   ansible.builtin.systemd:
     name: "firewall.service"
     state: "started"

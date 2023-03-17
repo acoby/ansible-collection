@@ -39,7 +39,7 @@
   when:
     - "ntp_enabled | bool"
     - "'systemd-timesyncd.service' in services"
-  failed_when: false
+  ignore_errors: true
   tags:
     - ntp
 
@@ -49,6 +49,7 @@
     name: "{{ ntp_daemon }}"
     state: started
     enabled: true
+  ignore_errors: true
   when: "ntp_enabled | bool"
   tags:
     - ntp
@@ -59,6 +60,7 @@
     name: "{{ ntp_daemon }}"
     state: stopped
     enabled: false
+  ignore_errors: true
   when: "not (ntp_enabled | bool)"
   tags:
     - ntp

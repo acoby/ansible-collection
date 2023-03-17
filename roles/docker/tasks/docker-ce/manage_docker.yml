@@ -67,11 +67,13 @@
   ansible.builtin.systemd:
     name: "docker"
     enabled: true
+  ignore_errors: true
 
 - name: "Reload Docker"
   ansible.builtin.systemd:
     name: "docker"
     state: "restarted"
+  ignore_errors: true
   when: "docker_configuration.changed"
 
 - name: "Log into private registry and force re-authorization"
@@ -84,7 +86,7 @@
   loop_control:
     loop_var: registry
     label: "{{ registry.name }}"
-  failed_when: false
+  ignore_errors: true
   when:
     - "inventory is defined"
 

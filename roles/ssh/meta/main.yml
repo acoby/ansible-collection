@@ -1,6 +1,6 @@
 ---
 dependencies:
-  - role: acoby.fail2ban
+  - role: acoby.collection.fail2ban
 
 galaxy_info:
   namespace: acoby

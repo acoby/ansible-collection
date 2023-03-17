@@ -16,7 +16,7 @@
 -A INPUT -j acoby-services
 
 # Internal Network
-{% for host in groups['all']|sort %}
+{% for host in groups['all'] | sort %}
 {% if hostvars[host].network.wan.ipv6 is defined %}
 -A acoby-wan -i {{ network.wan.interface }} -s {{ hostvars[host].network.wan.ipv6.address }}/128 -p tcp -m tcp --dport {{ acoby_ssh_port }} -j ACCEPT -m comment --comment "allow ssh traffic from {{ host }} via WAN"
 -A acoby-wan -i {{ network.wan.interface }} -s {{ hostvars[host].network.wan.ipv6.address }}/128 -p ipv6-icmp -j ACCEPT -m comment --comment "allow icmp traffic from {{ host }} via WAN"
@@ -24,16 +24,18 @@
 {% endfor %}
 
 {% if 'monitoring' in groups %}
-{% for host in groups['monitoring']|sort %}
-{% if hostvars[host].network.wan.ipv4 is defined %}
+{% for host in groups['monitoring'] | sort %}
+{% if hostvars[host].network.wan.ipv6 is defined %}
 -A acoby-wan -i {{ network.wan.interface }} -s {{ hostvars[host].network.wan.ipv6.address }}/128 -p tcp -m tcp --dport 5665 -j ACCEPT -m comment --comment "allow monitoring traffic from {{ host }} via WAN"
 {% endif %}
 {% endfor %}
 {% endif %}
 
-{% for ip in network.wan.ipv6.dns|sort %}
+{% if network.wan.ipv6 is defined %}
+{% for ip in network.wan.ipv6.dns | sort %}
 -A acoby-wan -i {{ network.wan.interface }} -s {{ ip }}/128 -p udp -m udp --dport 53 -j ACCEPT -m comment --comment "allow dns traffic via WAN"
 {% endfor %}
+{% endif %}
 
 {% if firewall_allow_ipv6 is defined %}
 # External Network

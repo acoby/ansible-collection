@@ -68,7 +68,7 @@
     name: "sshd"
     state: "reloaded"
     enabled: true
-  failed_when: false
+  ignore_errors: true
   when: "sshconfig.changed"
   tags:
     - ssh

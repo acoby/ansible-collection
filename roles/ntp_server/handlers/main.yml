@@ -4,6 +4,7 @@
   ansible.builtin.service:
     name: "{{ ntp_daemon }}"
     state: "restarted"
+  ignore_errors: true
   when: "ntp_enabled | bool"
 
 - name: "Restart Fail2Ban"
@@ -12,4 +13,4 @@
     name: "fail2ban"
     state: "restarted"
     enabled: true
-  failed_when: false
+  ignore_errors: true

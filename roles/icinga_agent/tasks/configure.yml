@@ -122,6 +122,7 @@
 - name: "Reload Systemd"
   ansible.builtin.systemd:
     daemon_reload: true
+  ignore_errors: true
   when: "_monitoring_systemd_limits.changed"
 
 - name: "Override System Defaults for Icinga"

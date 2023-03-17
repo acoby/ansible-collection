@@ -2,7 +2,35 @@
 all:
   hosts:
     instance:
+      hardware:
+        type: "virtual"
+      network:
+        wan:
+          interface: "eth0"
+          ipv4:
+            address: "192.168.0.2"
+            netmask: "255.255.255.0"
+            gateway: "192.168.0.1"
+            dns:
+              - "192.168.0.1"
+        pan:
+          interface: "wg_pan"
+          ipv4:
+            address: "10.0.0.2"
+            netmask: "255.255.255.0"
+            dns:
+              - "10.0.0.1"
+          ipv6:
+            address: "fd00::2"
+            prefix: "64"
+            dns:
+              - "fd00::1"
+            private_key: "privatekey"
+            public_key: "publickey"
   vars:
+    acoby_pan_port: 10000
+    inventory_user: "ansible"
+    inventory_pass: "password"
     inventory:
       root_password: "password"
       monitoring:
@@ -18,3 +46,23 @@ all:
         port: 25
         recipient: "mailuser@mail.example"
         from: "mailuser@mail.example"
+      network:
+        pan: "pan.domain.tld"
+        ipv4: "10.0.0.0/24"
+        ipv6: "fd00::/64"
+      shares:
+        nfs:
+          - name: "shared storage"
+            type: "nfs"
+            path:
+              host: "server"
+              share: "/mnt/srv"
+            mount: "/srv"
+    ntp_area: "de"
+    ntp_timezome: "Europe/Berlin"
+    users:
+      - username: "ansible"
+        roles: "REPORT"
+        department: "IT"
+        pubkey: "none"
+        shadow: "x"

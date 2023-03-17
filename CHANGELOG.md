@@ -3,7 +3,7 @@
 ## v1.1.0
 
 - added some roles and minor documentation
-- added molecule test (which not really runs)
+- added molecule test
 
 ## v1.0.0
 

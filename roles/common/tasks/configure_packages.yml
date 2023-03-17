@@ -28,7 +28,7 @@
   ansible.builtin.command:  # noqa command-instead-of-module
     cmd: "systemctl get-default"
   changed_when: false
-  failed_when: false
+  ignore_errors: true
   register: __systemdefault
 
 - name: "Set default to multi-user target"

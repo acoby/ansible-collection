@@ -1,6 +1,6 @@
 ---
 dependencies:
-  - role: acoby.firewall
+  - role: acoby.collection.firewall
 
 galaxy_info:
   namespace: acoby
