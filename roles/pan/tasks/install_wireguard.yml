@@ -26,10 +26,6 @@
     loop_var: directory
     label: "{{ directory.path }}"
 
-- name: "Debug network"
-  ansible.builtin.debug:
-    msg: "{{ network }}"
-
 - name: "Generate Wireguard server configuration"
   ansible.builtin.template:
     src: "{{ template.src }}"

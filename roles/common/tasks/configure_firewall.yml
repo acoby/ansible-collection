@@ -85,24 +85,34 @@
     - src: "firewall/env.sh.j2"
       dest: "/etc/network/firewall/env.sh"
       mode: "0750"
+
     - src: "firewall/filter.v4.d/00-default.v4.j2"
       dest: "/etc/network/firewall/filter.v4.d/00-default.v4"
+
     - src: "firewall/filter.v4.d/10-default.v4.j2"
       dest: "/etc/network/firewall/filter.v4.d/10-default.v4"
+
     - src: "firewall/filter.v4.d/99-default.v4.j2"
       dest: "/etc/network/firewall/filter.v4.d/99-default.v4"
+
     - src: "firewall/nat.v4.d/00-default.v4.j2"
       dest: "/etc/network/firewall/nat.v4.d/00-default.v4"
+
     - src: "firewall/nat.v4.d/99-default.v4.j2"
       dest: "/etc/network/firewall/nat.v4.d/99-default.v4"
+
     - src: "firewall/filter.v6.d/00-default.v6.j2"
       dest: "/etc/network/firewall/filter.v6.d/00-default.v6"
+
     - src: "firewall/filter.v6.d/10-default.v6.j2"
-      dest: "/etc/network/firewall/filter.v6.d/00-default.v6"
+      dest: "/etc/network/firewall/filter.v6.d/10-default.v6"
+
     - src: "firewall/filter.v6.d/99-default.v6.j2"
-      dest: "/etc/network/firewall/filter.v6.d/00-default.v6"
+      dest: "/etc/network/firewall/filter.v6.d/99-default.v6"
+
     - src: "firewall/nat.v6.d/00-default.v6.j2"
       dest: "/etc/network/firewall/nat.v6.d/00-default.v6"
+
     - src: "firewall/nat.v6.d/99-default.v6.j2"
       dest: "/etc/network/firewall/nat.v6.d/99-default.v6"
   loop_control:
