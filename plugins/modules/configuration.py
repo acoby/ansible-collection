@@ -16,7 +16,7 @@ ANSIBLE_METADATA = {
 
 DOCUMENTATION = '''
 ---
-module: define_configuration
+module: configuration
 short_description: Allow to store host specific configurations that can be read and stored
 version_added: "2.9"
 description:
@@ -58,7 +58,7 @@ options:
 
 EXAMPLES = '''
 - name: Define a configuration on the given host
-    define_configuration:
+    acoby.collection.configuration:
         file: /etc/ansible_local.json
         content:
             service_secret: "{{ lookup('password', '/dev/null length=32 chars=ascii_letters,digits') }}"
