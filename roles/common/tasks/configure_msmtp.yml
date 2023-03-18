@@ -5,11 +5,6 @@
     name: "dma"
     state: absent
 
-- name: "Install Mail Agent MSMTP"
-  ansible.builtin.apt:
-    name: "{{ mta_packages }}"
-    state: present
-
 - name: "Create log folder"
   ansible.builtin.file:
     path: "/var/log/mail/msmtp"

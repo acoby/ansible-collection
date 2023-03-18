@@ -84,3 +84,41 @@
   tags:
     - common
     - mta
+
+- name: "Configure Fail2Ban"
+  ansible.builtin.include_tasks: configure_fail2ban.yml
+  args:
+    apply:
+      become: true
+      tags:
+        - common
+        - fail2ban
+  tags:
+    - common
+    - fail2ban
+
+- name: "Configure SSH"
+  ansible.builtin.include_tasks: configure_ssh.yml
+  args:
+    apply:
+      become: true
+      tags:
+        - common
+        - ssh
+  tags:
+    - common
+    - ssh
+
+- name: "Install Firewall dependency"
+  ansible.builtin.include_tasks: configure_firewall.yml
+  args:
+    apply:
+      become: true
+      tags:
+        - common
+        - firewall
+  when:
+    - "hardware.type is not defined or hardware.type != 'physical'"
+  tags:
+    - common
+    - firewall

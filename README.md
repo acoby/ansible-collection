@@ -18,11 +18,8 @@ Documentation for the collection.
 
 ## Roles
 
-- acoby.collection.common - a base role for all systems
-- acoby.collection.fail2ban - a role for managing fail2ban (requires acoby.collection.common)
-- acoby.collection.ssh - a role for managing SSH (requires acoby.collection.fail2ban)
-- acoby.collection.firewall - a role for managing a iptables based firewall (requires acoby.collection.ssh)
-- acoby.collection.icinga_agent - a role for managing an icinga agent (requires acoby.collection.firewall)
+- acoby.collection.common - a base role for all systems, contains common, fail2ban, ssh, firewall
+- acoby.collection.icinga_agent - a role for managing an icinga agent (requires acoby.collection.common)
 - acoby.collection.pan - a role for managing a private area network between all hosts in a cluster (requires acoby.collection.icinga_agent)
 
 - acoby.collection.ca_server - a role for managing a CA provider instance (requires acoby.collection.common)
@@ -38,9 +35,6 @@ So any higher role then
 
 - requires acoby.collection.pan, which
 - requires acoby.collection.icinga_agent, 
-- requires acoby.collection.firewall, which 
-- requires acoby.collection.ssh, which 
-- requires acoby.collection.fail2ban, which 
 - requires acoby.collection.common.
 
 Any host then is guaranteed to have correct network setup with fail2ban, firewall, icinga agent and a PAN network defined.

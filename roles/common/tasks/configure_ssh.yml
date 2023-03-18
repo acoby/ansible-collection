@@ -1,26 +1,14 @@
 # Manage SSH
 ---
-- name: "Install SSH client and server"
-  become: true
-  ansible.builtin.apt:
-    name: "{{ ssh_packages }}"
-    state: "present"
-  tags:
-    - ssh
-
 - name: "Create Run Directory"
-  become: true
   ansible.builtin.file:
     path: "/run/sshd"
     state: "directory"
     owner: "root"
     group: "root"
     mode: "0755"
-  tags:
-    - ssh
 
 - name: "Configure SSH"
-  become: true
   ansible.builtin.lineinfile:
     dest: "{{ item.file }}"
     regexp: "{{ item.regexp }}"
@@ -41,11 +29,8 @@
       line: "Port {{ acoby_ssh_port }}"
   notify: "Restart SSH"
   register: sshconfig
-  tags:
-    - ssh
 
 - name: "Allow root logins from backup hosts"
-  become: true
   ansible.builtin.blockinfile:
     dest: "/etc/ssh/sshd_config"
     marker: "# {mark}: Allow root logins from backup hosts (managed by ansible)."
@@ -59,32 +44,15 @@
   when:
     - "inventory.backup is defined"
     - "'backup' in group_names"
-  tags:
-    - ssh
 
 - name: "Reload SSH Service"
-  become: true
   ansible.builtin.service:
     name: "sshd"
     state: "reloaded"
     enabled: true
   ignore_errors: "{{ inventory.id is not defined }}"
   when: "sshconfig.changed"
-  tags:
-    - ssh
 
 - name: "Change SSH Port for Ansible Session"
   ansible.builtin.set_fact:
     ansible_port: "{{ acoby_ssh_port }}"
-  tags:
-    - ssh
-
-- name: "Configure Fail2Ban"
-  ansible.builtin.include_tasks: configure_fail2ban.yml
-  args:
-    apply:
-      become: true
-      tags:
-        - ssh
-  tags:
-    - ssh

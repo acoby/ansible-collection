@@ -1,22 +1,4 @@
 ---
-- name: "Install common necessary Debian packages"
-  become: true
-  ansible.builtin.apt:
-    name: "{{ fail2ban_packages }}"
-    state: "present"
-  tags:
-    - fail2ban
-
-- name: "Install common necessary Python PIP libraries"
-  become: true
-  ansible.builtin.pip:
-    name: "{{ fail2ban_pip_packages }}"
-    state: "present"
-  when:
-    - "fail2ban_pip_packages | length > 0"
-  tags:
-    - fail2ban
-
 - name: "Define Ignore-Networks"
   ansible.builtin.set_fact:
     fail2ban_ignore_ips: []
@@ -117,7 +99,6 @@
     - "not __network.deleted | bool"
 
 - name: "Configure Fail2Ban"
-  become: true
   ansible.builtin.template:
     src: "{{ template.src }}"
     dest: "{{ template.dest }}"
@@ -125,38 +106,37 @@
     group: "{{ template.group | default('root') }}"
     mode: "{{ template.mode | default('0644') }}"
   loop:
-    - src: "fail2ban.local.j2"
+    - src: "fail2ban/fail2ban.local.j2"
       dest: "/etc/fail2ban/fail2ban.local"
-    - src: "jail.local.j2"
+    - src: "fail2ban/jail.local.j2"
       dest: "/etc/fail2ban/jail.local"
-    - src: "action.d/sendmail-common.conf.j2"
+    - src: "fail2ban/action.d/sendmail-common.conf.j2"
       dest: "/etc/fail2ban/action.d/sendmail-common.local"
-    - src: "action.d/sendmail-whois.conf.j2"
+    - src: "fail2ban/action.d/sendmail-whois.conf.j2"
       dest: "/etc/fail2ban/action.d/sendmail-whois.local"
-    - src: "action.d/ip-blacklist.conf.j2"
+    - src: "fail2ban/action.d/ip-blacklist.conf.j2"
       dest: "/etc/fail2ban/action.d/ip-blacklist.conf"
-    - src: "action.d/ip-blacklist-v6.conf.j2"
+    - src: "fail2ban/action.d/ip-blacklist-v6.conf.j2"
       dest: "/etc/fail2ban/action.d/ip-blacklist-v6.conf"
-    - src: "filter.d/ip-blacklist.conf.j2"
+    - src: "fail2ban/filter.d/ip-blacklist.conf.j2"
       dest: "/etc/fail2ban/filter.d/ip-blacklist.conf"
-    - src: "filter.d/ip-blacklist.conf.j2"
+    - src: "fail2ban/filter.d/ip-blacklist.conf.j2"
       dest: "/etc/fail2ban/filter.d/ip-blacklist.conf"
-    - src: "jail.d/ip-blacklist.conf.j2"
+    - src: "fail2ban/jail.d/ip-blacklist.conf.j2"
       dest: "/etc/fail2ban/jail.d/ip-blacklist.conf"
-    - src: "fail2ban-report.j2"
+    - src: "fail2ban/jail.d/sshd-jail.conf.j2"
+      dest: "/etc/fail2ban/jail.d/sshd.conf"
+    - src: "fail2ban/fail2ban-report.j2"
       dest: "/usr/local/sbin/fail2ban-report"
       mode: "0700"
   loop_control:
     loop_var: template
     label: "{{ template.src }}"
   notify: "Restart Fail2Ban"
-  tags:
-    - fail2ban
 
 - name: "Configure Fail2Ban Blacklist Masks"
-  become: true
   ansible.builtin.template:
-    src: "filter.d/ip-blacklist-mask.conf.j2"
+    src: "fail2ban/filter.d/ip-blacklist-mask.conf.j2"
     dest: "/etc/fail2ban/filter.d/ip-blacklist{{ item.mask }}.conf"
     owner: "root"
     group: "root"
@@ -171,19 +151,13 @@
     - mask: 96
     - mask: 128
   notify: "Restart Fail2Ban"
-  tags:
-    - fail2ban
 
 - name: "Check IP Blacklist status"
-  become: true
   ansible.builtin.stat:
     path: "/etc/fail2ban/ip.blacklist"
   register: ip_blacklist
-  tags:
-    - fail2ban
 
 - name: "Generate IP Blackist, if it not already exists"
-  become: true
   ansible.builtin.file:
     path: "/etc/fail2ban/ip.blacklist"
     state: "touch"
@@ -191,5 +165,3 @@
     group: "root"
     mode: "0644"
   when: "not ip_blacklist.stat.exists"
-  tags:
-    - fail2ban

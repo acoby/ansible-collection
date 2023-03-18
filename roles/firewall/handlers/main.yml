@@ -1,8 +1,0 @@
----
-- name: "Restart Firewall"
-  become: true
-  ansible.builtin.systemd:
-    name: "firewall.service"
-    state: "restarted"
-    enabled: true
-  ignore_errors: "{{ inventory.id is not defined }}"

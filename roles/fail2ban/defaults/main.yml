@@ -1,5 +1,0 @@
----
-fail2ban_packages:
-  - "fail2ban"
-  - "whois"
-fail2ban_pip_packages: []

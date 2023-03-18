@@ -22,9 +22,15 @@ common_apt_packages:
   - "python3-openssl"
   - "python3-ldap"
   - "jq"
-common_pip_packages: []
-mta_packages:
+  - "fail2ban"
+  - "whois"
+  - "ssh"
   - "msmtp"
   - "msmtp-mta"
+  - "iptables"
+  - "iptables-persistent"
+common_pip_packages: []
 reboot_when_required: false
 zfs_enabled: false
+acoby_ssh_port: 2244
+firewall_enabled: true

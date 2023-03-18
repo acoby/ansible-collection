@@ -1,4 +1,0 @@
----
-ssh_packages:
-  - "ssh"
-acoby_ssh_port: 2244

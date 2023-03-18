@@ -1,8 +1,0 @@
----
-- name: "Restart Fail2Ban"
-  become: true
-  ansible.builtin.service:
-    name: "fail2ban"
-    state: "restarted"
-    enabled: true
-  ignore_errors: "{{ inventory.id is not defined }}"
