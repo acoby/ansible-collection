@@ -1,15 +1,15 @@
 ---
 all:
   hosts:
-    instance:
+    instance1:
       hardware:
         type: "virtual"
       infrastructure:
         os: "debian-11"
         hostType: "vm"
-        type: "test"
-        location: "home"
-        hostname: "instance"
+        type: "testvm"
+        location: "testcenter"
+        hostname: "instance1"
         parent: "master"
         provider:
           type: "hetzner-root"
@@ -19,6 +19,7 @@ all:
         customerId: "one"
       network:
         wan:
+          fqdn: "instance1.domail.tld"
           interface: "eth0"
           ipv4:
             address: "192.168.0.2"
@@ -27,7 +28,10 @@ all:
             dns:
               - "192.168.0.1"
         pan:
+          fqdn: "instance1.domail.pan"
           interface: "wg_pan"
+          private_key: "privatekey1"
+          public_key: "publickey1"
           ipv4:
             address: "10.0.0.2"
             netmask: "255.255.255.0"
@@ -38,8 +42,86 @@ all:
             prefix: "64"
             dns:
               - "fd00::1"
-            private_key: "privatekey"
-            public_key: "publickey"
+    instance2:
+      hardware:
+        type: "virtual"
+      infrastructure:
+        os: "debian-11"
+        hostType: "vm"
+        type: "testvm"
+        location: "testcenter"
+        hostname: "instance1"
+        parent: "master"
+        provider:
+          type: "hetzner-cloud"
+        software:
+          sandbox: "docker-ce"
+      owner:
+        customerId: "one"
+      network:
+        wan:
+          fqdn: "instance2.domail.tld"
+          interface: "eth0"
+          ipv4:
+            address: "192.168.0.3"
+            netmask: "255.255.255.0"
+            gateway: "192.168.0.1"
+            dns:
+              - "192.168.0.1"
+        pan:
+          fqdn: "instance1.domail.pan"
+          interface: "wg_pan"
+          private_key: "privatekey2"
+          public_key: "publickey2"
+          ipv4:
+            address: "10.0.0.3"
+            netmask: "255.255.255.0"
+            dns:
+              - "10.0.0.1"
+          ipv6:
+            address: "fd00::3"
+            prefix: "64"
+            dns:
+              - "fd00::1"
+    server1:
+      hardware:
+        type: "physical"
+      infrastructure:
+        os: "debian-11"
+        hostType: "host"
+        type: "server"
+        location: "testcenter"
+        hostname: "server1"
+        parent: "master"
+        provider:
+          type: "hetzner-root"
+      owner:
+        customerId: "one"
+      network:
+        wan:
+          fqdn: "server1.domail.tld"
+          interface: "eth0"
+          ipv4:
+            address: "192.168.0.100"
+            netmask: "255.255.255.0"
+            gateway: "192.168.0.1"
+            dns:
+              - "192.168.0.1"
+        pan:
+          fqdn: "server1.domail.pan"
+          interface: "wg_pan"
+          private_key: "privatekey3"
+          public_key: "publickey3"
+          ipv4:
+            address: "10.0.0.100"
+            netmask: "255.255.255.0"
+            dns:
+              - "10.0.0.1"
+          ipv6:
+            address: "fd00::100"
+            prefix: "64"
+            dns:
+              - "fd00::1"
   vars:
     acoby_pan_port: 10000
     customers:
@@ -68,17 +150,10 @@ all:
         name: "My Robot"
         from: "mailuser@mail.example"
       network:
-        pan: "pan.domain.tld"
-        ipv4: "10.0.0.0/24"
-        ipv6: "fd00::/64"
-      shares:
-        nfs:
-          - name: "shared storage"
-            type: "nfs"
-            path:
-              host: "server"
-              share: "/mnt/srv"
-            mount: "/srv"
+        pan:
+          domain: "domain.pan"
+          ipv4: "10.0.0.0/24"
+          ipv6: "fd00::/64"
     ntp_area: "de"
     ntp_timezome: "Europe/Berlin"
     users:
@@ -88,3 +163,27 @@ all:
         customerId: "one"
         pubkey: "none"
         shadow: "x"
+  children:
+    linux:
+      hosts:
+        instance1:
+        instance2:
+        server1:
+    pan:
+      hosts:
+        instance1:
+        instance2:
+        server1:
+    nfs:
+      hosts:
+        server1:
+      vars:
+        exports:
+          - name: "shared storage"
+            mountpoint: "/srv"
+            type: "nfs"
+            path: "/mnt/srv"
+    vms:
+      hosts:
+        instance1:
+        instance2:

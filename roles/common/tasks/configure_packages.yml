@@ -40,6 +40,17 @@
     - "'multi-user' not in __systemdefault.stdout"
     - "__systemdefault.rc == 0"
 
+- name: "Create network directory structure"
+  ansible.builtin.file:
+    path: "{{ item.path }}"
+    state: "directory"
+    owner: "{{ item.owner | default('root') }}"
+    group: "{{ item.group | default('root') }}"
+    mode: "{{ item.mode | default('0755') }}"
+  loop:
+    - path: "/etc/default"
+    - path: "/etc/network"
+
 - name: "Set all IPs in /etc/hosts"
   ansible.builtin.blockinfile:
     dest: "/etc/hosts"

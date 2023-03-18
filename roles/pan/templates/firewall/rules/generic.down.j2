@@ -13,7 +13,7 @@ ip6tables -D INPUT -j acoby-pan
 iptables  -X acoby-pan || true
 ip6tables -X acoby-pan || true
 {% endif %}
-{% if inventory_hostname in groups[wireguard_service_group] %}
+{% if wireguard_service_group in group_names and inventory_hostname in groups[wireguard_service_group] %}
 {% if network.wan.ipv4 is defined %}
 # remove ipv4 forward rules for wireguard gateways
 iptables         -D FORWARD -i {{ network.pan.interface }} -j ACCEPT -m comment --comment "allow incoming traffic forward to PAN interface"

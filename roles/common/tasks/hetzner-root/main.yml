@@ -1,15 +1,4 @@
 ---
-- name: "Create network directory structure"
-  ansible.builtin.file:
-    path: "{{ item }}"
-    state: "directory"
-    owner: "root"
-    group: "root"
-    mode: "0755"
-  loop:
-    - path: "/etc/default"
-    - path: "/etc/network"
-
 - name: "Install Hetzner-Root Hosting Dependencies"
   ansible.builtin.apt:
     name: "qemu-guest-agent"
@@ -24,27 +13,30 @@
     mode: "{{ template.mode | default('0644') }}"
     backup: "{{ template.backup | default(omit) }}"
   loop:
-    - src: "{{ infrastructure.provider.type }}/resolv.conf.j2"
-      dest: "/etc/resolv.conf"
-      owner: "root"
-      group: "root"
-      mode: "0644"
     - src: "{{ infrastructure.provider.type }}/network/interfaces.j2"
       dest: "/etc/network/interfaces"
       backup: true
+    - src: "{{ infrastructure.provider.type }}/resolv.conf.j2"
+      dest: "/etc/resolv.conf"
   loop_control:
     loop_var: template
     label: "{{ template.src }}"
   ignore_errors: "{{ inventory.id is not defined }}"
-  register: "_configure_interfaces"
+  register: __configure_interfaces
 
 - name: "Configure ZFS"
   ansible.builtin.include_tasks: "configure_zfs.yml"
   when: "zfs_enabled | bool"
 
+- name: "Check, if grub is installed"
+  ansible.builtin.stat:
+    path: "/etc/default/grub"
+  register: __grub_default
+
 - name: "Switch to old network device name layout"
   when:
-    - "_configure_interfaces is changed"
+    - "__configure_interfaces is changed"
+    - "__grub_default.stat.exists"
   block:
     - name: "Switch to old network layout"
       ansible.builtin.lineinfile:

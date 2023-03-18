@@ -1,11 +1,11 @@
 ---
 - name: "Create PKI folder"
   ansible.builtin.file:
-    path: /etc/icinga2/pki
-    state: directory
-    owner: root
-    group: nagios
-    mode: 0770
+    path: "/etc/icinga2/pki"
+    state: "directory"
+    owner: "root"
+    group: "nagios"
+    mode: "0770"
 
 - name: "Run icinga2 pki new-cert for {{ inventory_hostname }}"
   ansible.builtin.command: icinga2 pki new-cert \

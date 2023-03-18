@@ -17,3 +17,4 @@
   loop_control:
     loop_var: hostfile
     label: "{{ hostfile.name }}"
+  ignore_errors: "{{ inventory.id is not defined }}"

@@ -1,5 +1,12 @@
 # Change Log
 
+## v1.2.2
+
+- fixed different issues with molecule
+- added multiple instances for molecule tests
+- tests running til acoby.collection.pan role
+- added documentation
+
 ## v1.2.1
 
 - fixed a lint issue with ignore_errors

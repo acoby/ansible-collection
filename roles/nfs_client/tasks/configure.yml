@@ -28,6 +28,7 @@
   ansible.builtin.stat:
     path: "/etc/init.d/rpcbind"
   register: rpcbind_service_status
+  ignore_errors: "{{ inventory.id is not defined }}"
 
 - name: "Stop RPC Bind"
   when:
@@ -35,11 +36,14 @@
   block:
     - name: "Stop RPC Bind Init Service"
       ansible.builtin.systemd:
-        name: rpcbind
-        state: stopped
+        name: "rpcbind"
+        state: "stopped"
         enabled: false
+      ignore_errors: "{{ inventory.id is not defined }}"
+
     - name: "Stop RPC Bind Socket Init Service"
       ansible.builtin.systemd:
-        name: rpcbind.socket
-        state: stopped
+        name: "rpcbind.socket"
+        state: "stopped"
         enabled: false
+      ignore_errors: "{{ inventory.id is not defined }}"

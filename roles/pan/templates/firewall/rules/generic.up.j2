@@ -50,7 +50,7 @@ ip6tables -A acoby-pan -i {{ network.lan.interface }} -d {{ network.lan.ipv6.add
 iptables  -A acoby-pan -i {{ network.pan.interface }} -s {{ inventory.network.pan.ipv4 }} -p icmp -j ACCEPT -m comment --comment "allow all icmp from PAN"
 ip6tables -A acoby-pan -i {{ network.pan.interface }} -s {{ inventory.network.pan.ipv6 }} -p icmp -j ACCEPT -m comment --comment "allow all icmp from PAN"
 
-{% if inventory_hostname in groups[wireguard_service_group] %}
+{% if wireguard_service_group in group_names and inventory_hostname in groups[wireguard_service_group] %}
 {% if network.wan.ipv4 is defined %}
 # allow ipv4 forward rules for wireguard gateways
 iptables         -A FORWARD -i {{ network.pan.interface }} -j ACCEPT -m comment --comment "allow incoming traffic forward to PAN interface"

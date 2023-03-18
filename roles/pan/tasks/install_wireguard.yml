@@ -8,48 +8,8 @@
 - name: "Install WireGuard"
   ansible.builtin.apt:
     name:
-      - "wireguard-dkms"
-      - "wireguard-tools"
+      - "wireguard"
     state: "present"
-
-- name: "Reboot kernel"
-  when:
-    - "wireguard_kernel_reboot | bool"
-  block:
-    - name: "Check for kernel update"
-      acoby.collection.get_kernel_info:
-        lookup_packages: false
-      register: _wg_kernel_update
-
-    - name: "Reboot for kernel update"
-      throttle: 1
-      ansible.builtin.reboot:
-        msg: "Kernel update detected by Ansible"
-      when: "_wg_kernel_update.new_kernel_exists"
-
-- name: "Install kernel headers on PVE Debian"
-  ansible.builtin.apt:
-    name: "pve-headers"
-    state: "present"
-    update_cache: true
-  when: "'pve' in ansible_kernel"
-
-- name: "Install kernel headers on Default Debian"
-  ansible.builtin.apt:
-    name: "linux-headers-amd64"
-    state: "present"
-    update_cache: true
-  when: "'pve' not in ansible_kernel"
-
-- name: "Enable WireGuard kernel module"
-  community.general.modprobe:
-    name: "wireguard"
-    state: "present"
-  register: wireguard_module_enabled
-  until: "wireguard_module_enabled is succeeded"
-  retries: 10
-  delay: 10
-  failed_when: "wireguard_module_enabled is failure"
 
 - name: "Create WireGuard configurations directories"
   ansible.builtin.file:
@@ -65,6 +25,10 @@
   loop_control:
     loop_var: directory
     label: "{{ directory.path }}"
+
+- name: "Debug network"
+  ansible.builtin.debug:
+    msg: "{{ network }}"
 
 - name: "Generate Wireguard server configuration"
   ansible.builtin.template:
