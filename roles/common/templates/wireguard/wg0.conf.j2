@@ -1,0 +1,50 @@
+[Interface]
+Address = {{ network.pan.ipv4.address }}, {{ network.pan.ipv6.address }}
+ListenPort = {{ acoby_pan_port }}
+PrivateKey = {{ network.pan.private_key }}
+
+{% if 'proxmox' not in group_names and 'storage' not in group_names and firewall_enabled is defined and firewall_enabled | bool %}
+PostUp   = /etc/wireguard/firewall_{{ network.pan.interface }}.sh start
+PostDown = /etc/wireguard/firewall_{{ network.pan.interface }}.sh stop
+{% endif %}
+
+{% for node in groups[wireguard_pan_group] | sort %}
+{% if inventory_hostname != node %}
+# {{ node }}
+[Peer]
+PublicKey = {{ hostvars[node].network.pan.public_key }}
+{% if network.lan is defined and hostvars[node].network.lan is defined %}
+Endpoint = {{ hostvars[node].network.lan.fqdn }}:{{ acoby_pan_port }}
+{% else %}
+Endpoint = {{ hostvars[node].network.wan.fqdn }}:{{ acoby_pan_port }}
+{% endif %}
+AllowedIps = {{ hostvars[node].network.pan.ipv4.address }}
+AllowedIps = {{ hostvars[node].network.pan.ipv6.address }}
+{% if hostvars[node].nobod is defined and hostvars[node].nobod.services is defined and hostvars[node].nobod.services[wireguard_nobod_service_group] is defined %}
+{% for wg_service_id in hostvars[node].nobod.services[wireguard_nobod_service_group].instances %}
+{% set wg_service = inventory.instances[wg_service_id] %}
+# wireguard service instance {{ wg_service_id }}
+{% if wg_service.ipv4_net is defined %}
+AllowedIps = {{ wg_service.ipv4_net }}
+{% endif %}
+{% if wg_service.ipv6_net is defined %}
+AllowedIps = {{ wg_service.ipv6_net }}
+{% endif %}
+{% endfor %}
+{% if network.wan.ipv4 is not defined and node == (groups[wireguard_service_group] | first) %}
+# ipv4 gateway
+AllowedIps = 0.0.0.0/0
+{% endif %}
+{% if network.pan.site2site_hosts is defined and network.pan.site2site_hosts[node] is defined %}
+AllowedIps = {{ network.pan.site2site_hosts[node] | join(',') }}
+{% endif %}
+{% if network_pan_site2site_all is defined and network_pan_site2site_all[node] is defined%}
+AllowedIps = {{ network_pan_site2site_all[node] | join(',') }}
+{% endif %}
+{% if network_pan_site2site_groups is defined and network_pan_site2site_groups[node] is defined %}
+AllowedIps = {{ network_pan_site2site_groups[node] | join(',') }}
+{% endif %}
+{% endif %} 
+
+{% endif %}
+{% endfor %}

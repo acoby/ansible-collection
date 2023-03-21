@@ -29,8 +29,19 @@ common_apt_packages:
   - "msmtp-mta"
   - "iptables"
   - "iptables-persistent"
+  - "wireguard"
 common_pip_packages: []
 reboot_when_required: false
 zfs_enabled: false
-acoby_ssh_port: 2244
+acoby_ssh_port: 22
+acoby_pan_port: 50000
 firewall_enabled: true
+monitoring_node_port: 5665
+
+wireguard_pan_group: "linux"
+wireguard_service_group: "service_wireguard"
+wireguard_nobod_service_group: "wireguard_services"
+wireguard_icinga_check: true
+wireguard_dns_available: true
+wireguard_path: "/etc/wireguard"
+wireguard_kernel_reboot: false

@@ -1,0 +1,23 @@
+---
+- name: "Verify Mandatory fields"
+  ansible.builtin.assert:
+    that:
+      - "check_domain is defined"
+    fail_msg: "At least one value for monitoring role is not defined (check_domain, check_type)"
+
+- name: "Define some facts"
+  ansible.builtin.set_fact:
+    monitor_domain: "{{ check_domain }}"
+    monitor_configfilename: "{{ 'httpcheck_' + check_domain + '.conf' }}"
+    monitor_operation: "{{ check_type | default('add') }}"
+    monitor_uripath: "{{ check_url | default('/') }}"
+
+- name: "Configure provider specific settings"
+  ansible.builtin.include_tasks: "vhost_{{ monitor_operation }}.yml"
+  args:
+    apply:
+      become: true
+      tags:
+        - icinga_check
+  tags:
+    - icinga_check

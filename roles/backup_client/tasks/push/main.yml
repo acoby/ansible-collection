@@ -1,0 +1,136 @@
+---
+- name: "Install Debian Borgbackup Packages"
+  ansible.builtin.apt:
+    name:
+      - "borgbackup"
+    state: present
+
+- name: "Create directory for Borgbackup"
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: "directory"
+    mode: "0700"
+  loop:
+    - "/root/.ssh/"
+    - "/root/bin"
+  loop_control:
+    loop_var: directory
+
+- name: "Create root SSH key pair for Borg Backup"
+  ansible.builtin.user:
+    name: "root"
+    generate_ssh_key: true
+    ssh_key_file: "/root/.ssh/id_rsa"
+    ssh_key_bits: "4096"
+    ssh_key_type: "rsa"
+    ssh_key_comment: "root@{{ inventory_hostname_short }}"
+
+- name: "Fetch root SSH public key"
+  ansible.builtin.fetch:
+    src: "/root/.ssh/id_rsa.pub"
+    dest: "{{ inventory.backup.fetch_dir }}/{{ inventory_hostname }}/root_rsa.pub"
+    fail_on_missing: true
+    flat: true
+
+- name: "Fetch SSH public host keys"
+  ansible.builtin.fetch:
+    src: "/etc/ssh/{{ item }}"
+    dest: "{{ inventory.backup.fetch_dir }}/{{ inventory.backup.server }}/{{ item }}"
+    flat: true
+  loop: "{{ hostkeys }}"
+  delegate_to: "{{ inventory.backup.server }}"
+
+- name: "Add every host's host keys to global known_hosts"
+  ansible.builtin.blockinfile:
+    dest: "/etc/ssh/ssh_known_hosts"
+    marker: "# {mark}: Borgbackup host keys (managed by ansible)."
+    content: |
+      {% for host in groups['service_borgbackup'] %}{% for keytype in hostkeys %}
+      {{ host }},{{ hostvars[host].network.wan.ipv4.address }} {{ ' '.join(lookup('file', inventory.backup.fetch_dir + '/' + host + '/' + keytype).split()[:-1]) }}
+      {{ host }},{{ hostvars[host].network.wan.ipv6.address }} {{ ' '.join(lookup('file', inventory.backup.fetch_dir + '/' + host + '/' + keytype).split()[:-1]) }}
+      {% endfor %}{% endfor %}
+    create: true
+    owner: "root"
+    group: "root"
+    mode: "0644"
+
+- name: "Configure Authorized Keys File on backup server"
+  ansible.posix.authorized_key:
+    user: "{{ inventory.backup.user }}"
+    key: "{{ lookup('file', inventory.backup.fetch_dir + inventory_hostname + '/root_rsa.pub') }}"
+    key_options: 'command="cd {{ inventory.backup.pool }}/{{ inventory_hostname }};borg serve --append-only --restrict-to-path {{ inventory.backup.pool }}/{{ inventory_hostname }}",restrict'
+  delegate_to: "{{ inventory.backup.server }}"
+
+- name: "Configure Borg Backup Repositories"
+  ansible.builtin.file:
+    path: "{{ inventory.backup.pool }}/{{ inventory_hostname }}"
+    owner: "{{ inventory.backup.user }}"
+    group: "{{ inventory.backup.group }}"
+    mode: 0700
+    state: directory
+  failed_when: false
+  delegate_to: "{{ inventory.backup.server }}"
+
+- name: "Add Borg backup configurations and scripts"
+  ansible.builtin.template:
+    src: "{{ template.src }}"
+    dest: "{{ template.dest }}"
+    owner: "{{ template.owner }}"
+    group: "{{ template.group }}"
+    mode: "{{ template.mode }}"
+    force: "{{ template.force | default(omit) }}"
+  loop:
+    - src: "{{ backup_method }}/backup.sh.j2"
+      dest: "/root/bin/backup.sh"
+      owner: "root"
+      group: "root"
+      mode: "0700"
+  loop_control:
+    loop_var: template
+
+- name: "Create Configuration"
+  acoby.collection.configuration:
+    file: "/root/.backup-config.json"
+    content:
+      backup_cron_hour: "{{ 6 | random }}"
+      backup_cron_min: "{{ 59 | random(start=5) }}"
+    owner: "root"
+    group: "root"
+    mode: 0400
+  register: "ansible_local"
+
+- name: "Add cron-job for borg backup"
+  ansible.builtin.cron:
+    name: "backup"
+    user: "root"
+    cron_file: "backup"
+    job: "/root/bin/backup.sh"
+    hour: "{{ ansible_local.value.backup_cron_hour }}"
+    minute: "{{ ansible_local.value.backup_cron_min }}"
+
+- name: "Set PATH for Backup cron job"
+  ansible.builtin.cron:
+    name: PATH
+    user: "root"
+    cron_file: "backup"
+    env: true
+    value: "/usr/local/sbin:/usr/local/bin:/sbin:/bin:/usr/sbin:/usr/bin"
+
+- name: "Verify Borg Init Status"
+  ansible.builtin.command: "borg info {{ inventory.backup.repository }}"
+  environment:
+    BORG_PASSPHRASE: "{{ inventory.backup.encryption_passphrase }}"
+    BORG_RELOCATED_REPO_ACCESS_IS_OK: "yes"
+  failed_when: false
+  changed_when: false
+  register: __borgcheck
+
+- name: "Initialize Borg Repository"
+  ansible.builtin.command: "borg init --append-only --encryption=repokey-blake2 --info {{ inventory.backup.repository }}"
+  environment:
+    BORG_PASSPHRASE: "{{ inventory.backup.encryption_passphrase }}"
+    BORG_RELOCATED_REPO_ACCESS_IS_OK: "yes"
+  register: __borginit
+  failed_when: "__borginit.rc != 0"
+  changed_when: "'Initializing repository' in __borginit.stdout"
+  when: "__borgcheck.rc != 0"

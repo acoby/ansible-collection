@@ -1,0 +1,77 @@
+---
+- name: "Add Icinga Repository Key"
+  ansible.builtin.apt_key:
+    url: "https://packages.icinga.com/icinga.key"
+    state: "present"
+
+- name: "Add Icinga Repository"
+  ansible.builtin.apt_repository:
+    repo: "deb http://packages.icinga.com/debian icinga-{{ ansible_distribution_release }} main"
+    state: "present"
+    filename: "icinga"
+
+- name: "Update Repositories cache and install 'icinga2' package"
+  ansible.builtin.apt:
+    name:
+      - "icinga2"
+      - "monitoring-plugins-basic"
+      - "s-nail"
+      - "nagios-plugins-contrib"
+      - "binutils"
+      - "libmonitoring-plugin-perl"
+      - "sysstat"
+      - "bc"
+      - "lz4"
+      - "lzop"
+    update_cache: true
+
+- name: "Clean up Configfiles"
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: "absent"
+  loop:
+    - "/etc/icinga2/conf.d/apt.conf"
+    - "/etc/icinga2/zones.conf.orig"
+    - "/etc/icinga2/constants.conf.orig"
+    - "/etc/icinga2/scripts/mail-host-notification.sh.dpkg-dist"
+    - "/etc/icinga2/scripts/mail-service-notification.sh.dpkg-dist"
+
+- name: "Create SystemD Config Dir"
+  ansible.builtin.file:
+    path: "/etc/systemd/system/icinga2.service.d"
+    state: "directory"
+    mode: "0755"
+    owner: "root"
+    group: "root"
+
+- name: "Override System Limits for Icinga"
+  ansible.builtin.template:
+    src: "{{ template.src }}"
+    dest: "{{ template.dest }}"
+    owner: "{{ template.owner | default('root') }}"
+    group: "{{ template.group | default('root') }}"
+    mode: "{{ template.mode | default('0640') }}"
+  loop:
+    - src: "systemd/limits.conf.j2"
+      dest: "/etc/systemd/system/icinga2.service.d/limits.conf"
+    - src: "icinga/default.j2"
+      dest: "/etc/default/icinga2"
+  loop_control:
+    loop_var: template
+    label: "{{ template.src }}"
+  register: "_monitoring_systemd_limits"
+
+- name: "Reload Systemd"
+  ansible.builtin.systemd:
+    daemon_reload: true
+  ignore_errors: "{{ inventory.id is not defined }}"
+  when: "_monitoring_systemd_limits.changed"
+
+- name: "Add Ping Checks"
+  ansible.builtin.template:
+    src: "icinga/conf.d/check_ping.conf.j2"
+    dest: "/etc/icinga2/conf.d/check_ping.conf"
+    owner: "nagios"
+    group: "nagios"
+    mode: "0440"
+  when: "monitor is defined and monitor.check.ping is defined"

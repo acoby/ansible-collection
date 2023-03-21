@@ -1,0 +1,7 @@
+---
+backup_method: "push"
+hostkeys:
+  - "ssh_host_rsa_key.pub"
+  - "ssh_host_ed25519_key.pub"
+  - "ssh_host_ecdsa_key.pub"
+backend_ansible_group: "service_borgbackup"

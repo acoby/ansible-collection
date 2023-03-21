@@ -1,0 +1,63 @@
+---
+- name: "Install Bind Dependencies"
+  ansible.builtin.apt:
+    name:
+      - "bridge-utils"
+      - "bind9"
+      - "python3-pip"
+      - "python3-dev"
+      - "python3-virtualenv"
+      - "python3-requests"
+      - "python3-pexpect"
+      - "build-essential"
+      - "ethtool"
+      - "tayga"
+    state: "present"
+
+- name: "Create directories"
+  ansible.builtin.file:
+    path: "{{ directory.name }}"
+    owner: "{{ directory.owner | default(omit) }}"
+    group: "{{ directory.group | default(omit) }}"
+    mode: "{{ directory.mode | default(omit) }}"
+    state: "directory"
+  loop:
+    - name: "/var/spool/tayga"
+      owner: "root"
+      group: "root"
+      mode: "0755"
+    - path: "/var/cache/bind"
+      owner: "root"
+      group: "bind"
+      mode: "0775"
+  loop_control:
+    loop_var: directory
+    label: "{{ directory.name }}"
+
+- name: "Configure Tayga and Bind Options"
+  ansible.builtin.template:
+    src: "{{ template.src }}"
+    dest: "{{ template.dest }}"
+    owner: "{{ template.owner | default('root') }}"
+    group: "{{ template.group | default('root') }}"
+    mode: "{{ template.mode | default('0644') }}"
+  loop:
+    - src: "{{ bind_install_method }}/tayga.conf.j2"
+      dest: "/etc/tayga.conf"
+    - src: "{{ bind_install_method }}/default/tayga.j2"
+      dest: "/etc/default/tayga"
+  loop_control:
+    loop_var: template
+    label: "{{ template.src }}"
+  notify:
+    - "Restart Tayga"
+
+- name: "Start Tayga"
+  ansible.builtin.service:
+    name: "tayga"
+    state: "restarted"
+    enabled: true
+  ignore_errors: "{{ inventory.id is not defined }}"
+
+- name: "Manage Bind configuration"
+  ansible.builtin.include_tasks: configure_bind.yml

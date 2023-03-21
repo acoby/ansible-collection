@@ -1,0 +1,25 @@
+---
+- name: "Define Backup method"
+  ansible.builtin.set_fact:
+    backup_method: "{{ inventory.backup.method | default('push') }}"
+  when:
+    - "inventory.backup is defined"
+  tags:
+    - common
+    - backup
+
+- name: "Install Backup client with {{ backup_method }}"
+  ansible.builtin.include_tasks: "{{ backup_method }}.yml"
+  args:
+    apply:
+      become: true
+      tags:
+        - common
+        - backup
+  when:
+    - "inventory.backup is defined"
+    - "backend_ansible_group in group_names"
+    - "groups[backend_ansible_group]"
+  tags:
+    - common
+    - backup

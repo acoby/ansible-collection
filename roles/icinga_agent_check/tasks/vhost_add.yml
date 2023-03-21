@@ -1,0 +1,22 @@
+---
+- name: "Check icinga2 install status"
+  ansible.builtin.stat:
+    path: "/etc/icinga2"
+  register: icinga_install_status
+
+- name: "Configure HTTP Service Check"
+  ansible.builtin.template:
+    src: "{{ template.src }}"
+    dest: "{{ template.dest }}"
+    owner: "{{ template.owner | default('nagios') }}"
+    group: "{{ template.group | default('nagios') }}"
+    mode: "{{ template.mode | default('0440') }}"
+  loop:
+    - src: "{{ monitor_template | default('httpcheck_default.conf.j2') }}"
+      dest: "/etc/icinga2/conf.d/{{ monitor_configfilename }}"
+  loop_control:
+    loop_var: template
+    label: "{{ template.src }}"
+  when:
+    - "icinga_install_status.stat.exists"
+  notify: "Reload Icinga"

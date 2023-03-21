@@ -1,0 +1,25 @@
+; {{ ansible_managed }}
+;
+; BIND data file for local network
+;
+$TTL  604800
+@ IN  SOA {{ network.pan.fqdn }}. root.{{ inventory.network.pan.domain }}. (
+            {{ bind_serial }}   ; Serial
+       604800   ; Refresh
+        86400   ; Retry
+      2419200   ; Expire
+       604800 ) ; Negative Cache TTL
+;
+; name servers - NS records
+{% for host in groups['proxmox']|sort %}
+     IN      NS      {{ hostvars[host].network.pan.fqdn }}.
+{% endfor %}
+
+; PTR Records
+{% for host in groups['all']|sort %}
+{% if hostvars[host].network.pan is defined %}
+{% if hostvars[host].network.pan.ipv6 is defined %}
+{{ hostvars[host].network.pan.ipv6.address | ipaddr('revdns') }}   IN      PTR     {{ hostvars[host].network.pan.fqdn }}.    ;  {{ hostvars[host].network.pan.ipv6.address }}
+{% endif %}
+{% endif %}
+{% endfor %}

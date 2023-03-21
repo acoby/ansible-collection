@@ -1,0 +1,22 @@
+---
+dependencies:
+  - role: acoby.collection.common
+  - role: acoby.collection.gfs_client
+  - role: acoby.collection.nfs_client
+
+galaxy_info:
+  namespace: acoby
+  role_name: sandbox
+  author: Thoralf Rickert-Wendt
+  description: A role for managing sandbox system as base of Docker, Podman or Kubernetes
+  company: Acoby GmbH
+  license: MIT
+  min_ansible_version: "2.12"
+  platforms:
+    - name: Debian
+      versions:
+        - bullseye
+  galaxy_tags:
+    - cloud
+    - development
+    - system

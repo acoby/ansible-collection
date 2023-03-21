@@ -1,0 +1,65 @@
+#!/bin/bash
+# {{ ansible_managed }}
+
+set -e
+
+export BORG_PASSPHRASE="{{ inventory.backup.encryption_passphrase }}"
+
+mkdir -p /var/lib/backup
+
+logger "Starting Backup {{ inventory_hostname }} at `date`"
+
+export BACKUP_TIME="`date +%Y%m%d%H%M`"
+export BORG_REPO="{{ inventory.backup.repository }}"
+export BACKUP_NAME="{{ inventory_hostname }}"
+export KEY_SERVER_URL="{{ inventory.backup.keyserver }}"
+export BACKUP_TARGETS=""
+{% for dir in inventory.backup.source_directories %}
+if [ -d "{{ dir }}" ]; then
+  export BACKUP_TARGETS="$BACKUP_TARGETS {{ dir }}"
+fi
+{% endfor %}
+{% if infrastructure.backup is defined and infrastructure.backup.additional_source_directories is defined %}
+{% for dir in infrastructure.backup.additional_source_directories %}
+if [ -d "{{ dir }}" ]; then
+  export BACKUP_TARGETS="$BACKUP_TARGETS {{ dir }}"
+fi
+{% endfor %}
+{% endif %}
+
+source /etc/borgbackup
+
+borg create -C zlib,6 --one-file-system ::$BACKUP_TIME-$BACKUP_NAME $BACKUP_TARGETS --stats 2>&1 | logger
+
+# prune old archives to keep disk space in check
+borg prune --prefix {hostname}- --umask 77 \
+  --lock-wait 5 \
+{% if inventory.backup.retentions_policy.keep_secondly is defined %}
+  --keep-secondly={{ inventory.backup.retentions_policy.keep_secondly }} \
+{% endif %}
+{% if inventory.backup.retentions_policy.keep_minutely is defined %}
+  --keep-minutely={{ inventory.backup.retentions_policy.keep_minutely }} \
+{% endif %}
+{% if inventory.backup.retentions_policy.keep_hourly is defined %}
+  --keep-hourly={{ inventory.backup.retentions_policy.keep_hourly }} \
+{% endif %}
+{% if inventory.backup.retentions_policy.keep_daily is defined %}
+  --keep-daily={{ inventory.backup.retentions_policy.keep_daily }} \
+{% endif %}
+{% if inventory.backup.retentions_policy.keep_weekly is defined %}
+  --keep-weekly={{ inventory.backup.retentions_policy.keep_weekly }} \
+{% endif %}
+{% if inventory.backup.retentions_policy.keep_monthly is defined %}
+  --keep-monthly={{ inventory.backup.retentions_policy.keep_monthly }} \
+{% endif %}
+{% if inventory.backup.retentions_policy.keep_yearly is defined %}
+  --keep-yearly={{ inventory.backup.retentions_policy.keep_yearly }} \
+{% endif %}
+  -v --list 2>&1 | logger
+
+# all done!
+logger "Backup complete at `date`"
+
+touch /var/lib/backup/execution
+
+#eof

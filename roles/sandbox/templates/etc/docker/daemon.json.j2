@@ -1,0 +1,15 @@
+{
+  "ipv6": true,
+  "fixed-cidr-v6": "{{ docker0_net }}",
+  "experimental":true,
+  "ip6tables":true,
+  "dns": [
+    {{ docker_dns | acoby.collection.quote_wrap | join(',') }}
+  ],
+  "mtu": {{ docker_mtu }},
+  "log-driver": "json-file",
+  "log-opts": {
+    "max-size": "10m",
+    "max-file": "3"
+  }
+}

@@ -1,0 +1,18 @@
+---
+dependencies:
+  - role: acoby.collection.common
+
+galaxy_info:
+  namespace: acoby
+  role_name: ca_client
+  author: Thoralf Rickert-Wendt
+  description: A role to create a Certificate Authority
+  company: Acoby GmbH
+  license: MIT
+  min_ansible_version: "2.12"
+  platforms:
+    - name: Debian
+      versions:
+        - bullseye
+  galaxy_tags:
+    - system

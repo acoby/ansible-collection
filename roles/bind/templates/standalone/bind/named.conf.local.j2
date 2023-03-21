@@ -1,0 +1,39 @@
+## {{ ansible_managed }}
+
+# private area network
+zone "{{ inventory.network.pan.domain }}" {
+    type master;
+    file "/etc/bind/db.{{ inventory.network.pan.domain }}";
+};
+
+# pan zone - reverse ipv4
+zone "{{ inventory.network.pan.ipv4 | ipaddr('revdns') | regex_replace('^[0-9]+\\.', '') }}" {
+    type master;
+    file "/etc/bind/db.{{ inventory.network.pan.domain }}.rev.ipv4";
+};
+
+# pan zone - reverse ipv6
+zone "{{ (inventory.network.pan.ipv6 | ipaddr('revdns'))[-(9+(inventory.network.pan.ipv6|regex_replace('^.*/','')|int)//2):] }}" {
+    type master;
+    file "/etc/bind/db.{{ inventory.network.pan.domain }}.rev.ipv6";
+};
+
+
+
+# local area network
+zone "{{ inventory.network.lan.domain }}" {
+    type master;
+    file "/etc/bind/db.{{ inventory.network.lan.domain }}"; # zone file path
+};
+
+# lan zone - reverse ipv4
+zone "{{ inventory.network.lan.ipv4 | ipaddr('revdns') | regex_replace('^[0-9]+\\.', '') }}" {
+    type master;
+    file "/etc/bind/db.{{ inventory.network.lan.domain }}.rev.ipv4";
+};
+
+# lan zone - reverse ipv6
+zone "{{ (inventory.network.lan.ipv6 | ipaddr('revdns'))[-(9+(inventory.network.lan.ipv6|regex_replace('^.*/','')|int)//2):] }}" {
+    type master;
+    file "/etc/bind/db.{{ inventory.network.lan.domain }}.rev.ipv6";
+};

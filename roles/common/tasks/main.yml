@@ -2,6 +2,8 @@
 - name: "Verify Mandatory fields"
   ansible.builtin.assert:
     that:
+      - "acoby_ssh_port is defined"
+      - "acoby_pan_port is defined"
       - "hardware is defined"
       - "hardware.type is defined"
       - "'virtual' in hardware.type or 'physical' in hardware.type"
@@ -78,10 +80,6 @@
       tags:
         - common
         - provider
-  when:
-    - "infrastructure is defined"
-    - "infrastructure.provider is defined"
-    - "infrastructure.provider.type is defined"
   tags:
     - common
     - provider
@@ -95,7 +93,6 @@
         - common
         - users
   when:
-    - "owner is defined"
     - "owner.users is defined"
   loop: "{{ owner.users | default([]) }}"
   loop_control:
@@ -156,7 +153,21 @@
     - common
     - ssh
 
-- name: "Install Firewall dependency"
+- name: "Install Private Area Network"
+  ansible.builtin.include_tasks: wireguard/main.yml
+  args:
+    apply:
+      become: true
+      tags:
+        - common
+        - wireguard
+        - pan
+  tags:
+    - common
+    - wireguard
+    - pan
+
+- name: "Install Firewall"
   ansible.builtin.include_tasks: configure_firewall.yml
   args:
     apply:
@@ -169,3 +180,50 @@
   tags:
     - common
     - firewall
+
+- name: "Install Icinga"
+  ansible.builtin.include_tasks: configure_icinga.yml
+  args:
+    apply:
+      become: true
+      tags:
+        - common
+        - icinga
+
+- name: "Install Icinga Satellite"
+  ansible.builtin.include_tasks: icinga_satellite/main.yml
+  args:
+    apply:
+      become: true
+      tags:
+        - common
+        - icinga
+        - icinga_satellite
+  when:
+    - "inventory.monitoring is defined"
+    - "inventory.monitoring.master is defined"
+  tags:
+    - common
+    - icinga
+    - icinga_satellite
+
+- name: "Install Icinga Agent"
+  ansible.builtin.include_tasks: icinga_agent/main.yml
+  args:
+    apply:
+      become: true
+      tags:
+        - common
+        - icinga
+        - icinga_agent
+  when:
+    - "inventory.monitoring is not defined or inventory.monitoring.master is not defined"
+  tags:
+    - common
+    - icinga
+    - icinga_agent
+
+- name: "Flush handlers"
+  ansible.builtin.meta: flush_handlers
+  tags:
+    - common

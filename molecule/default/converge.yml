@@ -1,11 +1,14 @@
 ---
-- name: "Converge"
+- name: "Assign common role to all hosts"
   hosts: "all"
-
-  collections:
-    - acoby.collection
-
   tasks:
-    - name: "Assign role"
+    - name: "Assign common role"
       ansible.builtin.include_role:
-        name: "acoby.collection.pan"
+        name: "acoby.collection.common"
+
+- name: "Assign sandbox role to all vms"
+  hosts: "vms"
+  tasks:
+    - name: "Assign sandbox role"
+      ansible.builtin.include_role:
+        name: "acoby.collection.sandbox"

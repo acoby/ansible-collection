@@ -1,0 +1,16 @@
+---
+- name: "Restart Bind"
+  become: true
+  ansible.builtin.service:
+    name: "bind9"
+    state: "restarted"
+    enabled: true
+  ignore_errors: "{{ inventory.id is not defined }}"
+
+- name: "Restart Tayga"
+  become: true
+  ansible.builtin.service:
+    name: "tayga"
+    state: "restarted"
+    enabled: true
+  ignore_errors: "{{ inventory.id is not defined }}"

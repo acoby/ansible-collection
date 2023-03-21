@@ -13,12 +13,11 @@
 -A INPUT -j acoby-pan
 -A INPUT -j acoby-services
 
-
-
 # Internal Network
 {% for host in groups['all'] | sort %}
-{% if hostvars[host].network.wan.ipv4 is defined %}
+{% if hostvars[host].network.wan.ipv4 is defined and network.wan.ipv4 is defined %}
 -A acoby-wan -i {{ network.wan.interface }} -s {{ hostvars[host].network.wan.ipv4.address }}/32 -p tcp -m tcp --dport {{ acoby_ssh_port }} -j ACCEPT -m comment --comment "allow ssh traffic from {{ host }} via WAN"
+-A acoby-wan -i {{ network.wan.interface }} -s {{ hostvars[host].network.wan.ipv4.address }}/32 -d {{ network.wan.ipv4.address }}/32 -p udp -m udp --dport {{ acoby_pan_port }} -j ACCEPT -m comment --comment "allow wireguard traffic from {{ host }} via WAN"
 -A acoby-wan -i {{ network.wan.interface }} -s {{ hostvars[host].network.wan.ipv4.address }}/32 -p icmp -j ACCEPT -m comment --comment "allow icmp traffic from {{ host }} via WAN"
 {% endif %}
 {% endfor %}
@@ -26,7 +25,7 @@
 {% if 'monitoring' in groups %}
 {% for host in groups['monitoring'] | sort %}
 {% if hostvars[host].network.wan.ipv4 is defined %}
--A acoby-wan -i {{ network.wan.interface }} -s {{ hostvars[host].network.wan.ipv4.address }}/32 -p tcp -m tcp --dport 5665 -j ACCEPT -m comment --comment "allow monitoring traffic from {{ host }} via WAN"
+-A acoby-wan -i {{ network.wan.interface }} -s {{ hostvars[host].network.wan.ipv4.address }}/32 -p tcp -m tcp --dport {{ monitoring_node_port }} -j ACCEPT -m comment --comment "allow monitoring traffic from {{ host }} via WAN"
 {% endif %}
 {% endfor %}
 {% endif %}

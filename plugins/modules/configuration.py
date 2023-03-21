@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/python3
 ''' Allow to store host specific configurations that can be read and stored from a JSON file. '''
 
 import os
@@ -17,58 +17,69 @@ ANSIBLE_METADATA = {
 DOCUMENTATION = '''
 ---
 module: configuration
+version_added: 1.0.0
+author: Thoralf Rickert-Wendt
 short_description: Allow to store host specific configurations that can be read and stored
-version_added: "2.9"
 description:
         - This module allows defining host specific facts or configurations. You can define a dict
             with a list of key value pairs. When you register the result, then you have access to
             the configurations. See example
 options:
         file:
+                type: str
+                required: true
                 description:
                         - location of the file (JSON format) that holds the configuration
-                type: str
         content:
+                type: dict
+                required: true
                 description:
                         - contains newly or already existing configuration values in key-value format.
                             Keys and Values should be of type str. If content is not given, data will
                             not be changed
-                type: dict
         override:
+                type: bool
+                required: false
+                default: false
                 description:
                         - if true, then the given value will override the already existing value.
-                type: bool
         owner:
+                type: str
+                required: false
                 description:
                         - the name of the user owner of the file
-                type: str
         group:
+                type: str
+                required: false
                 description:
                         - the name of the group owner of the file
-                type: str
         mode:
+                type: int
+                required: false
+                default: 0600
                 description:
                         - the mode of the file.
-                type: int
         dir_mode:
+                type: int
+                required: false
+                default: 0700
                 description:
                         - the mode of the directory, where the file is in (if it must be generated).
-                type: int
 '''
 
 EXAMPLES = '''
 - name: Define a configuration on the given host
-    acoby.collection.configuration:
-        file: /etc/ansible_local.json
-        content:
-            service_secret: "{{ lookup('password', '/dev/null length=32 chars=ascii_letters,digits') }}"
-            service_websocket_secret: "{{ lookup('password', '/dev/null length=128') | b64encode }}"
-            backup_cron_hour: "{{ 6 | random }}"
-            backup_cron_min: "{{ 59 | random(start=5) }}"
-        owner: root
-        group: root
-        mode: 0600
-    register: configuration
+  acoby.collection.configuration:
+    file: /etc/ansible_local.json
+    content:
+      service_secret: "{{ lookup('password', '/dev/null length=32 chars=ascii_letters,digits') }}"
+      service_websocket_secret: "{{ lookup('password', '/dev/null length=128') | b64encode }}"
+      backup_cron_hour: "{{ 6 | random }}"
+      backup_cron_min: "{{ 59 | random(start=5) }}"
+    owner: root
+    group: root
+    mode: 0600
+  register: configuration
 - name: "Output configuration value key backup_cron_hour"
     debug:
         msg: "{{ configuration.value.backup_cron_hour }}"

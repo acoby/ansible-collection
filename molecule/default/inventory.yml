@@ -123,6 +123,7 @@ all:
             dns:
               - "fd00::1"
   vars:
+    acoby_ssh_port: 22
     acoby_pan_port: 10000
     customers:
       one:

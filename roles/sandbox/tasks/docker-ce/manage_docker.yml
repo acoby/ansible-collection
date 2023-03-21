@@ -1,0 +1,100 @@
+---
+- name: "Add Docker Repository Key"
+  ansible.builtin.apt_key:
+    url: "https://download.docker.com/linux/debian/gpg"
+    state: "present"
+
+- name: "Add Docker Repository"
+  ansible.builtin.apt_repository:
+    repo: "deb https://download.docker.com/linux/debian {{ ansible_distribution_release }} stable"
+    filename: 'docker'
+    state: "present"
+
+- name: "Install Debian dependencies for Docker"
+  ansible.builtin.apt:
+    name: "{{ docker_packages }}"
+    state: "present"
+    update_cache: true
+
+- name: "Install Python dependencies for Docker"
+  ansible.builtin.pip:
+    name: "{{ docker_pip_packages }}"
+    state: "present"
+
+- name: "Remove old Pip3 Instalation of docker-compose"
+  ansible.builtin.pip:
+    name: "docker-compose"
+    state: "absent"
+
+- name: "Add docker-compose standalone replacement"
+  ansible.builtin.copy:
+    src: "docker-compose"
+    dest: "/usr/local/bin/docker-compose"
+    owner: "root"
+    group: "root"
+    mode: "0755"
+
+- name: "Install docker-compose Bash Completion"
+  ansible.builtin.get_url:
+    url: "https://raw.githubusercontent.com/docker/compose/1.29.0/contrib/completion/bash/docker-compose"
+    dest: "/etc/bash_completion.d/docker-compose"
+    owner: "root"
+    group: "root"
+    mode: "0644"
+
+- name: "Get the Docker0 IPv6 network, if IPv6 is available"
+  ansible.builtin.set_fact:
+    docker0_net: "{{ docker_subnet | ansible.utils.ipsubnet(110, 1) }}"
+  when: "docker_subnet is defined"
+
+- name: "Get the Docker0 IPv6 network, if IPv6 is available but not initialized"
+  ansible.builtin.set_fact:
+    docker0_net: "fdff:f001:f001:f001::/64"
+  when:
+    - "docker0_net is not defined"
+
+- name: "Get the Docker0 IPv6 network, if IPv6 is available but not initialized"
+  ansible.builtin.set_fact:
+    docker_service_dependencies: "{{ docker_service_dependencies + ['wg-quick@' + network.pan.interface + '.service'] }}"
+
+- name: "Configure Docker"
+  ansible.builtin.template:
+    src: "{{ template.src }}"
+    dest: "{{ template.dest }}"
+    owner: "{{ template.owner | default('root') }}"
+    group: "{{ template.group | default('root') }}"
+    mode: "{{ template.mode | default('0644') }}"
+  loop:
+    - src: "etc/default/docker"
+      dest: "/etc/default/docker"
+    - src: "etc/docker/daemon.json.j2"
+      dest: "/etc/docker/daemon.json"
+    - src: "etc/sysctl.d/99-docker-ipv6nat.conf"
+      dest: "/etc/sysctl.d/99-docker-ipv6nat.conf"
+    - src: "etc/docker.service.j2"
+      dest: "/lib/systemd/system/docker.service"
+  loop_control:
+    loop_var: template
+    label: "{{ template.src }}"
+  notify: "Restart Docker"
+
+- name: "Enable Docker at Boot"
+  ansible.builtin.systemd:
+    name: "docker"
+    enabled: true
+  ignore_errors: "{{ inventory.id is not defined }}"
+
+- name: "Log into private registry and force re-authorization"
+  no_log: true
+  community.docker.docker_login:
+    registry: "{{ registry.name }}"
+    username: "{{ registry.user }}"
+    password: "{{ registry.pass }}"
+  loop: "{{ inventory.registries | default([]) }}"
+  loop_control:
+    loop_var: registry
+    label: "{{ registry.name }}"
+  ignore_errors: true
+  when:
+    - "inventory is defined"
+    - "inventory.registries is defined"

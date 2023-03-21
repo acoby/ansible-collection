@@ -1,0 +1,13 @@
+---
+- name: "Configure CA root certificate"
+  ansible.builtin.include_tasks: configure.yml
+  args:
+    apply:
+      become: true
+      tags:
+        - ca_client
+  when:
+    - "inventory.ca is defined"
+    - "inventory.ca.host is defined"
+  tags:
+    - ca_client

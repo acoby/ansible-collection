@@ -1,0 +1,35 @@
+---
+- name: "Define CA facts"
+  ansible.builtin.set_fact:
+    ca_crt_file: "{{ inventory.ca.base | default(ca_base) }}/certs/ca.crt"
+
+- name: "Install ca package"
+  ansible.builtin.apt:
+    name: "ca-certificates"
+    state: "present"
+
+- name: "Check if CA root certificate exists"
+  delegate_to: "{{ inventory.ca.host }}"
+  ansible.builtin.stat:
+    path: "{{ ca_crt_file }}"
+  register: _ca_cert_file
+
+- name: "Fetch the root-ca certificate"
+  delegate_to: "{{ inventory.ca.host }}"
+  ansible.builtin.fetch:
+    src: "{{ ca_crt_file }}"
+    dest: "fetch/ca.crt"
+    flat: "yes"
+  when:
+    - "_ca_cert_file.stat.exists"
+
+- name: "Distribute the fetched root-ca to all hosts"
+  ansible.builtin.copy:
+    src: "fetch/ca.crt"
+    dest: "/usr/local/share/ca-certificates/acoby-ca.crt"
+    mode: "0644"
+    owner: "root"
+    group: "root"
+    backup: true
+  when:
+    - "_ca_cert_file.stat.exists"

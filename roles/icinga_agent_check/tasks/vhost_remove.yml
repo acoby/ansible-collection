@@ -1,0 +1,13 @@
+---
+- name: "Check icinga2 install status"
+  ansible.builtin.stat:
+    path: "/etc/icinga2"
+  register: icinga_install_status
+
+- name: "Remove Monitoring of Virtualhost for {{ monitor_domain }}"
+  ansible.builtin.file:
+    path: "/etc/icinga2/conf.d/{{ monitor_configfilename }}"
+    state: "absent"
+  when:
+    - "icinga_install_status.stat.exists"
+  notify: "Reload Icinga"

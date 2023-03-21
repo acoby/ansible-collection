@@ -1,29 +1,10 @@
-# role: proxmox
 ---
-- name: "Install Bind Dependencies"
-  become: true
-  ansible.builtin.apt:
-    name: "{{ bind_default.packages }}"
-    state: present
-  tags:
-    - bind
-
-- name: "Disable default Bind service"
-  ansible.builtin.systemd:
-    name: "named"
-    state: "stopped"
-    enabled: false
-  tags:
-    - bind
-
-- name: "Configure Wiregate Bind per Networks"
-  ansible.builtin.include_tasks: configure_bind.yml
+- name: "Install Named Service"
+  ansible.builtin.include_tasks: "{{ bind_install_method }}/main.yml"
   args:
     apply:
       become: true
-  loop: "{{ wiregate }}"
-  loop_control:
-    loop_var: network
-    label: "{{ network.name }}"
+      tags:
+        - bind
   tags:
     - bind

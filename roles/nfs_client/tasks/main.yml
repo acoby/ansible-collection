@@ -6,6 +6,8 @@
       become: true
       tags:
         - nfs_client
-  when: "'nfs' in groups"
+  when:
+    - "'nfs' in groups"
+    - "groups['nfs'] | length > 0"
   tags:
     - nfs_client

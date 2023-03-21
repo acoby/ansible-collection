@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/python3
 import subprocess
 import hashlib
 import os
@@ -15,8 +15,9 @@ ANSIBLE_METADATA = {
 DOCUMENTATION = '''
 ---
 module: move
+version_added: 1.0.0
+author: Thoralf Rickert-Wendt
 short_description: Allow to move files idempotent from source to destination
-version_added: "2.9"
 description:
         - This module allows moving files from one place to another place. The module always
             checks, if the source is still present. If you enable validation, then this module
@@ -24,28 +25,32 @@ description:
             source.
 options:
         src:
+                type: str
+                required: true
                 description:
                         - absolute path to the source file
-                type: str
         dest:
+                type: str
+                required: true
                 description:
                         - absolute path to the destination file
-                type: str
         validate:
+                type: bool
+                required: false
+                default: "false"
                 description:
                         - if true (default is false) then it also calculates the checksum of
                             source and destination if both files exists. If they differ, then the
                             destination is replaced by source. And in all cases the source file
                             will be removed, if it is still present
-                type: bool
 '''
 
 EXAMPLES = '''
 - name: Move a file to a new location
-    move:
-        src: /originalfile
-        dest: /newfile
-        validate: true
+  acoby.collection.move:
+    src: /originalfile
+    dest: /newfile
+    validate: true
 '''
 
 RETURN = '''

@@ -4,47 +4,42 @@ Documentation for the collection.
 
 ## Modules
 
-- acoby.collection.compose - manage docker compose with exec and run
-- acoby.collection.define_configuration - manage static yaml based facts configuration per host
-- acoby.collection.get_kernel_info - read kernel infos
-- acoby.collection.move - idempotent move, replacement for command: mv
+- `acoby.collection.compose` - manage docker compose with exec and run
+- `acoby.collection.configuration` - manage static yaml based facts configuration per host
+- `acoby.collection.get_kernel_info` - read kernel infos
+- `acoby.collection.move` - idempotent move, replacement for command: mv
 
 ## Filters
 
-- urlencode - encode string with urlencode
-- quote_wrap - wrap a list of strings with quotes
-- service_ipv4_address - define a acoby specific network range for services
-- service_ipv6_address - define a acoby specific network range for services
+- `acoby.collection.urlencode` - encode string with urlencode
+- `acoby.collection.quote_wrap` - wrap a list of strings with quotes
+- `acoby.collection.service_ipv4_address` - define a acoby specific network range for services
+- `acoby.collection.service_ipv6_address` - define a acoby specific network range for services
 
 ## Roles
 
-- acoby.collection.common - a base role for all systems, contains common, fail2ban, ssh, firewall
-- acoby.collection.icinga_agent - a role for managing an icinga agent (requires acoby.collection.common)
-- acoby.collection.pan - a role for managing a private area network between all hosts in a cluster (requires acoby.collection.icinga_agent)
+- `acoby.collection.common` - a base role for all systems, contains common, fail2ban, ssh, firewall
 
-- acoby.collection.ca_server - a role for managing a CA provider instance (requires acoby.collection.common)
-- acoby.collection.gfs_client - a role for managing a GlusterFS client (requires acoby.collection.pan)
-- acoby.collection.gfs_server - a role for managing a GlusterFS server (requires acoby.collection.pan)
-- acoby.collection.nfs_client - a role for managing a NFS client (requires acoby.collection.pan)
-- acoby.collection.nfs_server - a role for managing a NFS server (requires acoby.collection.pan)
-- acoby.collection.ntp_server - a role for managing a NTP server (requires acoby.collection.pan)
-- acoby.collection.bind - a role for managing a DNS server (requires acoby.collection.pan)
-- acoby.collection.docker - a role for managing Docker (requires acoby.collection.pan)
+- `acoby.collection.backup_client` - a role for managing a backup client (requires `acoby.collection.common`)
+- `acoby.collection.bind` - a role for managing a DNS server (requires `acoby.collection.common`)
+- `acoby.collection.ca_client` - a role for managing a CA client instance (requires `acoby.collection.common`)
+- `acoby.collection.ca_server` - a role for managing a CA provider instance (requires `acoby.collection.common`)
+- `acoby.collection.gfs_client` - a role for managing a GlusterFS client
+- `acoby.collection.gfs_server` - a role for managing a GlusterFS server (requires `acoby.collection.common`)
+- `acoby.collection.icinga_agent_check` - a role for managing custom icinga checks (requires `acoby.collection.common`)
+- `acoby.collection.nfs_client` - a role for managing a NFS client
+- `acoby.collection.nfs_server` - a role for managing a NFS server (requires `acoby.collection.common`)
+- `acoby.collection.ntp_server` - a role for managing a NTP server (requires `acoby.collection.common`)
+- `acoby.collection.sandbox` - a role for managing Docker (requires `acoby.collection.common`, `acoby.collection.nfs_client` and `acoby.collection.gfs_client`)
 
-So any higher role then
-
-- requires acoby.collection.pan, which
-- requires acoby.collection.icinga_agent, 
-- requires acoby.collection.common.
-
-Any host then is guaranteed to have correct network setup with fail2ban, firewall, icinga agent and a PAN network defined.
+So any higher role then should require `acoby.collection.common`.
+Any host is guaranteed to have correct network setup with fail2ban, firewall, icinga agent, backup and a PAN network defined.
 
 ## Inventory
 
 The acoby roles are depending on a complex inventory, which describes a lot of informations over all systems and states
 
 A host should have the following facts:
-
 
 - `hardware.type` - contains either "virtual" or "physical" which is relevant for managing hardware configuration. Ony virtal machine can be configured
 - `infrastructure.os` - contains the concrete software version of the operating system, like "debian-11"
@@ -54,6 +49,8 @@ A host should have the following facts:
 - `infrastructure.hostname` - a short but static name of this host - because some provider do not allow renaming of systems 
 - `infrastructure.parent` - for monitoring, either "master" which means, it depends on the monitoring master or another host means, it depends to that host 
 - `infrastructure.provider.type` - currently we support "hetzner-root", "hetzner-cloud" and "on-promise" 
+- `infrastructure.provider.ipv4.dns` - a list of public DNS servers from the provider itself
+- `infrastructure.provider.ipv6.dns` - a list of public DNS servers from the provider itself
 - `infrastructure.software.sandbox` - either "docker-ce" or "podman", used to configure container solution
 - `owner.customerId` - a reference to the dict in inventory under "owners.<customerId>"
 - `network.wan` - a mandatory dictionary describing the world area network connectivity of this host
@@ -111,6 +108,7 @@ And the underlying inventory for all group contains some informations about the 
 - `inventory.domain` - deprecated - a domain for the inventory, replaced by fqdn on all objects
 - `inventory.local_domain` - deprecated - a local domain for the inventory, replaced by inventory.network.lan.domain
 - `inventory.root_password` - the password for the root user 
+- `inventory.backup` -a reference to the backup server instance
 - `inventory.monitoring` - a dictionary to inform the inventory about the monitoring master
 - `inventory.monitoring.id` - a reference to the monitoring master service instance within the cluster 
 - `inventory.monitoring.master` - a hostname within the inventory containing the service instance 
@@ -151,8 +149,14 @@ And the underlying inventory for all group contains some informations about the 
 
 Also we have a special structure for all services. They are stored in the general inventory dictionary
 
-- `inventory.registries` - a list of Docker registries with name, type="docker", user and pass keys
+- `inventory.registries` - a list of Docker registries with `name`, `type="docker"`, `user` and `pass` keys
 - `inventory.networks` - a list of optional external networks to allow full access to the inventory
-- `inventory.storages` - a list of external storages (for backup)
+- `inventory.storages` - a list of external storages (for backup volumes)
 - `inventory.services` - a dictionary for describing all available services
 - `inventory.instances` - a dictionary for describing all available service instances
+
+## Known issues
+
+- we need to check, that infrastructure server are configred first (Proxmox, DNS, Storage)
+- resolv.conf is filled with public WAN DNS entries (always) but should use PAN DNS, when available
+- Proxmox Hosts should provide DHCP for local VMs

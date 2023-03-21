@@ -1,0 +1,36 @@
+---
+- name: "Verify Mandatory fields"
+  ansible.builtin.assert:
+    that:
+      - "wiregate is defined"
+    fail_msg: "At least one value in the inventory is not defined"
+
+- name: "Install Bind Dependencies"
+  ansible.builtin.apt:
+    name:
+      - "bridge-utils"
+      - "bind9"
+      - "python3-pip"
+      - "python3-dev"
+      - "python3-virtualenv"
+      - "python3-requests"
+      - "python3-pexpect"
+      - "build-essential"
+      - "ethtool"
+    state: "present"
+
+- name: "Disable default Bind service"
+  ansible.builtin.systemd:
+    name: "named"
+    state: "stopped"
+    enabled: false
+
+- name: "Configure Wiregate Bind per Networks"
+  ansible.builtin.include_tasks: configure_bind.yml
+  args:
+    apply:
+      become: true
+  loop: "{{ wiregate }}"
+  loop_control:
+    loop_var: network
+    label: "{{ network.name }}"

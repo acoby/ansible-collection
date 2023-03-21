@@ -1,0 +1,49 @@
+# role: docker
+---
+- name: "Read sandboxing solution"
+  ansible.builtin.set_fact:
+    sandbox_solution: "{{ infrastructure.software.sandbox }}"
+  when:
+    - "infrastructure is defined"
+    - "infrastructure.software is defined"
+    - "infrastructure.software.sandbox is defined"
+  tags:
+    - sandbox
+
+- name: "Set default DNS"
+  ansible.builtin.include_tasks: define_dns.yml
+  args:
+    apply:
+      tags:
+        - sandbox
+  tags:
+    - sandbox
+
+- name: "Manage Sandbox {{ sandbox_solution }}"
+  ansible.builtin.include_tasks: "{{ sandbox_solution }}/main.yml"
+  args:
+    apply:
+      become: true
+      tags:
+        - sandbox
+  tags:
+    - sandbox
+
+- name: "Setup Sandbox Basedir"
+  become: true
+  ansible.builtin.file:
+    path: "{{ directory.path }}"
+    state: "directory"
+    owner: "{{ template.owner | default('root') }}"
+    group: "{{ template.group | default('root') }}"
+    mode: "{{ template.mode | default('0755') }}"
+  loop:
+    - path: "/srv/docker"
+      mode: "0700"
+    - path: "/srv/data"
+      mode: "0700"
+    - path: "/srv/backup"
+      mode: "0700"
+  loop_control:
+    loop_var: directory
+    label: "{{ directory.path }}"

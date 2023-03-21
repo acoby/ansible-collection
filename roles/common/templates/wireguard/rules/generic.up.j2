@@ -1,0 +1,67 @@
+# {{ ansible_managed }}
+
+{% if not firewall_enabled|bool %}
+# create chain for pan-network
+iptables  -N acoby-pan || true
+ip6tables -N acoby-pan || true
+
+# forward all traffic thru custom chain
+iptables  -A INPUT -j acoby-pan
+ip6tables -A INPUT -j acoby-pan
+
+{% endif %}
+# flush chain, if chain already exists
+iptables  -F acoby-pan
+ip6tables -F acoby-pan
+
+# iterate all linux servers and allow them to use wireguard
+{% for host in groups[wireguard_pan_group] | sort %}
+{% if inventory_hostname != host %}
+{% if network.wan.ipv4 is defined and hostvars[host].network.wan.ipv4 is defined %}
+iptables  -A acoby-pan -i {{ network.wan.interface }} -s {{ hostvars[host].network.wan.ipv4.address }}/32 -d {{ network.wan.ipv4.address }}/32 -p udp -m udp --dport {{ acoby_pan_port }} -j ACCEPT -m comment --comment "allow wireguard traffic from {{ host }} via WAN"
+{% endif %}
+{% if network.wan.ipv6 is defined and hostvars[host].network.wan.ipv6 is defined %}
+ip6tables -A acoby-pan -i {{ network.wan.interface }} -s {{ hostvars[host].network.wan.ipv6.address }}/128 -d {{ network.wan.ipv6.address }}/128 -p udp -m udp --dport {{ acoby_pan_port }} -j ACCEPT -m comment --comment "allow wireguard traffic from {{ host }} via WAN"
+{% endif %}
+{% if network.lan is defined and hostvars[host].network.lan is defined %}
+iptables  -A acoby-pan -i {{ network.lan.interface }} -s {{ hostvars[host].network.lan.ipv4.address }}/32 -d {{ network.lan.ipv4.address }}/32 -p udp -m udp --dport {{ acoby_pan_port }} -j ACCEPT -m comment --comment "allow wireguard traffic from {{ host }} via LAN"
+ip6tables -A acoby-pan -i {{ network.lan.interface }} -s {{ hostvars[host].network.lan.ipv6.address }}/128 -d {{ network.lan.ipv6.address }}/128 -p udp -m udp --dport {{ acoby_pan_port }} -j ACCEPT -m comment --comment "allow wireguard traffic from {{ host }} via LAN"
+{% endif %}
+{% endif %}
+{% endfor %}
+
+# disallow unknown wireguard peers
+{% if network.wan.ipv4 is defined %}
+iptables  -A acoby-pan -i {{ network.wan.interface }} -d {{ network.wan.ipv4.address }}/32 -p udp -m udp --dport {{ acoby_pan_port }} -m limit --limit 2/min -j LOG --log-prefix 'fwlog: ' --log-level 4
+iptables  -A acoby-pan -i {{ network.wan.interface }} -d {{ network.wan.ipv4.address }}/32 -p udp -m udp --dport {{ acoby_pan_port }} -j DROP
+{% endif %}
+{% if network.wan.ipv6 is defined %}
+ip6tables -A acoby-pan -i {{ network.wan.interface }} -d {{ network.wan.ipv6.address }}/128 -p udp -m udp --dport {{ acoby_pan_port }} -m limit --limit 2/min -j LOG --log-prefix 'fwlog: ' --log-level 4
+ip6tables -A acoby-pan -i {{ network.wan.interface }} -d {{ network.wan.ipv6.address }}/128 -p udp -m udp --dport {{ acoby_pan_port }} -j DROP
+{% endif %}
+{% if network.lan is defined %}
+iptables  -A acoby-pan -i {{ network.lan.interface }} -d {{ network.lan.ipv4.address }}/32 -p udp -m udp --dport {{ acoby_pan_port }} -m limit --limit 2/min -j LOG --log-prefix 'fwlog: ' --log-level 4
+iptables  -A acoby-pan -i {{ network.lan.interface }} -d {{ network.lan.ipv4.address }}/32 -p udp -m udp --dport {{ acoby_pan_port }} -j DROP
+ip6tables -A acoby-pan -i {{ network.lan.interface }} -d {{ network.lan.ipv6.address }}/128 -p udp -m udp --dport {{ acoby_pan_port }} -m limit --limit 2/min -j LOG --log-prefix 'fwlog: ' --log-level 4
+ip6tables -A acoby-pan -i {{ network.lan.interface }} -d {{ network.lan.ipv6.address }}/128 -p udp -m udp --dport {{ acoby_pan_port }} -j DROP
+{% endif %}
+
+# allow ping
+iptables  -A acoby-pan -i {{ network.pan.interface }} -s {{ inventory.network.pan.ipv4 }} -p icmp -j ACCEPT -m comment --comment "allow all icmp from PAN"
+ip6tables -A acoby-pan -i {{ network.pan.interface }} -s {{ inventory.network.pan.ipv6 }} -p icmp -j ACCEPT -m comment --comment "allow all icmp from PAN"
+
+{% if wireguard_service_group in group_names and inventory_hostname in groups[wireguard_service_group] %}
+{% if network.wan.ipv4 is defined %}
+# allow ipv4 forward rules for wireguard gateways
+iptables         -A FORWARD -i {{ network.pan.interface }} -j ACCEPT -m comment --comment "allow incoming traffic forward to PAN interface"
+iptables         -A FORWARD -o {{ network.pan.interface }} -j ACCEPT -m comment --comment "allow outgoing traffic forward to PAN interface"
+iptables  -t nat -A POSTROUTING -o {{ network.wan.interface }} -j MASQUERADE -m comment --comment "mask all traffic via external interface"
+{% endif %}
+
+{% if network.wan.ipv6 is defined %}
+# allow ipv6 forward rules for wireguard gateways
+ip6tables        -A FORWARD -i {{ network.pan.interface }} -j ACCEPT -m comment --comment "allow incoming traffic forward to PAN interface"
+ip6tables        -A FORWARD -o {{ network.pan.interface }} -j ACCEPT -m comment --comment "allow outgoing traffic forward to PAN interface"
+ip6tables -t nat -A POSTROUTING -o {{ network.wan.interface }} -j MASQUERADE -m comment --comment "mask all traffic via external interface"
+{% endif %}
+{% endif %}

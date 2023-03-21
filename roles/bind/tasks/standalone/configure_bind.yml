@@ -1,0 +1,57 @@
+# role: proxmox - ipv6 forwarding and DNS
+---
+- name: "Check bind serial cache"
+  ansible.builtin.stat:
+    path: "/etc/bind/serial"
+  register: _bind_serial_cache
+
+- name: "Write bind serial to cache"
+  ansible.builtin.copy:
+    content: "1"
+    dest: "/etc/bind/serial"
+    owner: "root"
+    group: "root"
+    mode: "0400"
+  when: "not _bind_serial_cache.stat.exists"
+
+- name: "Read bind serial from cache"
+  ansible.builtin.command: "cat /etc/bind/serial"
+  register: _bind_serial_register
+  changed_when: false
+
+- name: "Define Bind serial"
+  ansible.builtin.set_fact:
+    bind_serial: "{{ _bind_serial_register.stdout | int + 1 }}"
+    bind_config_path: "{{ bind_path }}"
+
+- name: "Configure Bind Options"
+  ansible.builtin.template:
+    src: "{{ template.src }}"
+    dest: "{{ template.dest }}"
+    owner: "{{ template.owner | default('root') }}"
+    group: "{{ template.group | default('root') }}"
+    mode: "{{ template.mode | default('0644') }}"
+  loop:
+    - src: "{{ bind_install_method }}/bind/named.conf.options.j2"
+      dest: "{{ bind_config_path }}/named.conf.options"
+    - src: "{{ bind_install_method }}/bind/named.conf.local.j2"
+      dest: "{{ bind_config_path }}/named.conf.local"
+    - src: "{{ bind_install_method }}/bind/db.pan.domain.j2"
+      dest: "{{ bind_config_path }}/db.{{ inventory.network.pan.domain }}"
+    - src: "{{ bind_install_method }}/bind/db.pan.domain.rev.ipv4.j2"
+      dest: "{{ bind_config_path }}/db.{{ inventory.network.pan.domain }}.rev.ipv4"
+    - src: "{{ bind_install_method }}/bind/db.pan.domain.rev.ipv6.j2"
+      dest: "{{ bind_config_path }}/db.{{ inventory.network.pan.domain }}.rev.ipv6"
+    - src: "{{ bind_install_method }}/bind/db.lan.domain.j2"
+      dest: "{{ bind_config_path }}/db.{{ inventory.network.lan.domain }}"
+    - src: "{{ bind_install_method }}/bind/db.lan.domain.rev.ipv4.j2"
+      dest: "{{ bind_config_path }}/db.{{ inventory.network.lan.domain }}.rev.ipv4"
+    - src: "{{ bind_install_method }}/bind/db.lan.domain.rev.ipv6.j2"
+      dest: "{{ bind_config_path }}/db.{{ inventory.network.lan.domain }}.rev.ipv6"
+    - src: "{{ bind_install_method }}/resolv.conf.j2"
+      dest: "/etc/resolv.conf"
+  loop_control:
+    loop_var: template
+    label: "{{ template.src }}"
+  notify:
+    - "Restart Bind"

@@ -1,0 +1,55 @@
+---
+- name: "Set instance facts for agents where parent is master"
+  ansible.builtin.set_fact:
+    monitoring_master_hostname: "{{ inventory.monitoring.master }}"
+    monitoring_master_port: "{{ inventory.monitoring.port }}"
+    monitoring_master_instance: "{{ inventory.monitoring.id }}"
+    monitoring_parent_hostname: "{{ inventory.monitoring.master }}"
+    monitoring_parent_port: "{{ inventory.monitoring.port }}"
+    monitoring_parent_zone_name: "master"
+    monitoring_parent_zone_endpoint: "{{ inventory.monitoring.master_domain }}"
+  when: infrastructure.parent == 'master'
+
+- name: "Set instance facts for agents where parent is not master"
+  ansible.builtin.set_fact:
+    monitoring_master_hostname: "{{ inventory.monitoring.master }}"
+    monitoring_master_port: "{{ inventory.monitoring.port }}"
+    monitoring_master_instance: "{{ inventory.monitoring.id }}"
+    monitoring_parent_hostname: "{{ infrastructure.parent }}"
+    monitoring_parent_port: "{{ monitoring_node_port }}"
+    monitoring_parent_zone_name: "{{ infrastructure.parent }}"
+    monitoring_parent_zone_endpoint: "{{ infrastructure.parent }}"
+  when: infrastructure.parent != 'master'
+- name: "Clean up Configfiles"
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: "absent"
+  with_items:
+    - "/etc/icinga2/conf.d/apt.conf"
+    - "/etc/icinga2/zones.conf.orig"
+    - "/etc/icinga2/constants.conf.orig"
+    - "/etc/icinga2/scripts/mail-host-notification.sh.dpkg-dist"
+    - "/etc/icinga2/scripts/mail-service-notification.sh.dpkg-dist"
+
+- name: "Configure Icinga2 pki settings"
+  ansible.builtin.include_tasks: pki.yml
+
+- name: "Configure Icinga2 agent settings"
+  ansible.builtin.include_tasks: configure.yml
+
+- name: "Start Icinga2 Service"
+  ansible.builtin.service:
+    name: icinga2
+    state: started
+    enabled: true
+
+- name: "Mark Icinga2 instance as managed"
+  become: true
+  ansible.builtin.lineinfile:
+    path: "/etc/icinga2/.managed"
+    create: true
+    regex: "^ansible"
+    line: "ansible managed"
+    owner: "root"
+    group: "root"
+    mode: "0644"

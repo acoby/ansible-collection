@@ -1,0 +1,18 @@
+object CheckCommand "check_wireguard" {
+  import "plugin-check-command"
+  command = ["/usr/bin/sudo", PluginDir + "/check_wireguard" ]
+}
+
+apply Service "Wireguard Check {{ inventory_hostname }}" {
+  import "generic-service"
+  check_command = "check_wireguard"
+
+  assign where host.name == NodeName
+}
+
+apply Notification "Wireguard Check {{ inventory_hostname }} Notification" to Service {
+  import "mail-service-notification-template"
+  user_groups = [ "icingaadmins" ]
+  
+  assign where service.name == "Wireguard Check {{ inventory_hostname }}"
+}

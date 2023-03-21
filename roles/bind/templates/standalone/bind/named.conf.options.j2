@@ -1,0 +1,45 @@
+## {{ ansible_managed }}
+
+options {
+  directory "/var/cache/bind";
+
+  forwarders {
+    # Hetzner DNS server
+{% for server in infrastructure.provider.ipv4.dns %}
+    {{ server }};
+{% endfor %}
+{% for server in infrastructure.provider.ipv6.dns %}
+    {{ server }};
+{% endfor %}
+  };
+
+  dnssec-validation auto;
+
+  auth-nxdomain no;
+
+  listen-on {
+    127.0.0.1;
+    {{ network.wan.ipv4.address }};
+    {{ network.pan.ipv4.address }};
+    {{ network.lan.ipv4.address }};
+  };
+
+  listen-on-v6 {
+    ::1;
+    {{ network.wan.ipv6.address }};
+    {{ network.pan.ipv6.address }};
+    {{ network.lan.ipv6.address }};
+  };
+
+  allow-query {
+    any;
+  };
+
+  dns64 64:ff9b::/96 {
+    clients {
+{% for host in groups['vms_proxmox']|sort %}
+      {{ (hostvars[host].network.wan.ipv6.address +'/'+ hostvars[host].network.wan.ipv6.prefix) | ipv6('subnet') }};
+{% endfor %}
+    };
+  };
+};

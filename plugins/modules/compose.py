@@ -13,6 +13,85 @@ ANSIBLE_METADATA = {
   'status': ['preview'],
   'supported_by': 'acoby GmbH'
 }
+DOCUMENTATION = '''
+---
+module: move
+version_added: 1.0.0
+author: Thoralf Rickert-Wendt
+short_description: A small wrapper around the host specific docker compose plugin.
+description:
+        - This module allows managing docker compose environment with specific replacements
+          for exec and run commands.
+options:
+        project_src:
+                type: str
+                required: true
+                description:
+                        - absolute path to the docker compose directory
+        build:
+                type: bool
+                required: false
+                default: false
+                description:
+                        - a flag for docker to prebuild the docker images before starting
+        pull:
+                type: bool
+                required: false
+                default: false
+                description:
+                        - a flag for docker to pull the docker images before starting
+        remove_orphans:
+                type: bool
+                required: false
+                default: false
+                description:
+                        - a flag to indicate that all orphan container should be removed
+        restarted:
+                type: bool
+                required: false
+                default: false
+                description:
+                        - a flag to indicate the restart the docker compose environment
+        container:
+                type: str
+                required: false
+                description:
+                        - a container name within the docker compose environment
+        command:
+                type: str
+                required: false
+                description:
+                        - a command that should be executed
+        command_args:
+                type: list
+                required: false
+                description:
+                        - a list of arguments passed to the container command
+        state:
+                choices: [ "present", "absent", "execute", "run" ]
+                required: false
+                default: "present"
+                description:
+                        - a state of the docker compose environment. Be aware that "execute" and "run" are
+                          not idempotent. They run commands inside the given docker comtainerd
+'''
+
+EXAMPLES = '''
+- name: Move a file to a new location
+    acoby.collection.compose:
+        project_src: /my_project
+        container: "ubuntu"
+        state: exec
+        command: "ls"
+        command_args: ["-al","/"]
+'''
+
+RETURN = '''
+msg:
+    description: Message response from docker compose output
+    returned: always
+    type: str
+'''
 
 DOCKER_CLI = ['docker-compose']
 

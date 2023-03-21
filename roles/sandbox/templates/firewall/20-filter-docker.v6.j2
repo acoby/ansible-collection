@@ -1,0 +1,18 @@
+# {{ ansible_managed }}
+# --------------------------------------------
+# Docker Service (via NAT)
+-A DOCKER-USER -i {{ network.wan.interface }} -m conntrack --ctstate RELATED,ESTABLISHED -j RETURN
+
+{% if network.wan.ipv6 is defined %}
+# DNS is allowed
+{% for host in network.wan.ipv6.dns | sort %}
+-A DOCKER-USER -i {{ network.wan.interface }} -s {{ host }} -p udp --sport 53 -j RETURN -m comment --comment "allow DNS requests"
+{% endfor %}
+
+# Internal Network is allowed
+{% for host in groups['all'] | sort %}
+{% if hostvars[host].network.wan.ipv6 is defined %}
+-A DOCKER-USER -i {{ network.wan.interface }} -s {{ hostvars[host].network.wan.ipv6.address }}/64 -j RETURN -m comment --comment "allow all from {{ host }}"
+{% endif %}
+{% endfor %}
+{% endif %}

@@ -1,0 +1,9 @@
+---
+- name: "Install and configure Docker"
+  ansible.builtin.include_tasks: manage_docker.yml
+
+- name: "Configure Firewall for Docker"
+  ansible.builtin.include_tasks: manage_firewall.yml
+
+- name: "Configure Icinga for Docker"
+  ansible.builtin.include_tasks: configure_icinga.yml

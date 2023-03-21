@@ -1,19 +1,31 @@
 ---
-- name: "Define some facts"
+- name: "Define NFS main server"
   ansible.builtin.set_fact:
     nfs_server: "{{ groups['nfs'] | sort | first }}"
+
+- name: "Define standard facts for NFS mounts"
+  ansible.builtin.set_fact:
+    nfs_host: "{{ hostvars[nfs_server].network.wan.fqdn }}"
+    nfs_opts: "rw,nosuid,intr,noatime,noauto,_netdev,vers=4.2,x-systemd.automount,x-systemd.requires=network-online.target"
+
+- name: "Define PAN specific facts for NFS mounts"
+  ansible.builtin.set_fact:
+    nfs_host: "{{ hostvars[nfs_server].network.pan.fqdn }}"
+    nfs_opts: "rw,nosuid,intr,noatime,noauto,_netdev,vers=4.2,x-systemd.automount,x-systemd.requires=wg-quick@{{ network.pan.interface }}.service"
+  when:
+    - "use_pan_fqdn | bool"
 
 - name: "Install NFS client"
   ansible.builtin.apt:
     name: "{{ default_nfs_client_packages }}"
-    state: present
+    state: "present"
 
-- name: "Add NFS Mount Point to /etc/fstab"
+- name: "Add NFS Mount Point"
   ansible.posix.mount:
-    src: "{{ hostvars[nfs_server].network.pan.fqdn }}:{{ nfs_share.path }}"
+    src: "{{ nfs_host }}:{{ nfs_share.path }}"
     path: "{{ nfs_share.mountpoint }}"
     fstype: "nfs4"
-    opts: "rw,nosuid,intr,noatime,noauto,_netdev,vers=4.2,x-systemd.automount,x-systemd.requires=wg-quick@{{ network.pan.interface }}.service"
+    opts: "{{ nfs_opts }}"
     state: "mounted"
   loop: "{{ hostvars[nfs_server].exports | default([]) }}"
   loop_control:
@@ -22,7 +34,7 @@
     - "nfs_server is defined"
     - "nfs_share.name not in disable_nfs_share | default([])"
     - "nfs_share.mountpoint is defined"
-    - "infrastructure.storage is not defined or infrastructure.storage.nfs is not defined or not infrastructure.storage.nfs"
+  ignore_errors: "{{ inventory.id is not defined }}"
 
 - name: "Check if RPCBind Service Exists"
   ansible.builtin.stat:
