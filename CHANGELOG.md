@@ -1,5 +1,9 @@
 # Change Log
 
+## v1.3.1
+
+- fixed minor issue with ticket salt
+
 ## v1.3.0
 
 - added role backup_client
