@@ -93,11 +93,11 @@
   register: icinga_master_ticket
   changed_when: false
 
-- name: "Read Ticket Salt from Cache"
+- name: "Create Ticket configuration"
   acoby.collection.configuration:
     file: "/etc/icinga2/.config.json"
     content:
-      salt: "{{ licinga_satellite_ticketsalt.stdout }}"
+      salt: "{{ icinga_satellite_ticketsalt.stdout }}"
       ticket: "{{ icinga_master_ticket.stdout }}"
     owner: "root"
     group: "root"
@@ -108,7 +108,7 @@
   ansible.builtin.command: icinga2 pki request \
            --host {{ monitoring_master_hostname }} \
            --port {{ monitoring_master_port }} \
-           --ticket {{ icinga_configuration.content.ticket }} \
+           --ticket {{ icinga_configuration.value.ticket }} \
            --key /etc/icinga2/pki/{{ inventory_hostname }}.key \
            --cert /etc/icinga2/pki/{{ inventory_hostname }}.crt \
            --trustedcert /etc/icinga2/pki/trusted-master.crt \
@@ -119,7 +119,7 @@
 
 - name: "Icinga Node setup"
   ansible.builtin.command: icinga2 node setup \
-            --ticket {{ icinga_configuration.content.ticket }} \
+            --ticket {{ icinga_configuration.value.ticket }} \
             --endpoint {{ monitoring_parent_hostname }} \
             --zone {{ inventory_hostname }} \
             --master_host {{ monitoring_master_hostname }},{{ monitoring_master_port }} \

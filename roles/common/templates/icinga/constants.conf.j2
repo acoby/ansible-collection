@@ -7,4 +7,4 @@ const PluginContribDir = "/usr/lib/nagios/plugins"
 const NodeName = "{{ inventory_hostname }}"
 const ZoneName = "{{ inventory_hostname }}"
 
-const TicketSalt = "{{ icinga_configuration.content.salt | default('') }}"
+const TicketSalt = "{{ icinga_configuration.value.salt | default('') }}"
